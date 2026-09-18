@@ -5,6 +5,9 @@
     "apps/*",
     "packages/*"
   ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "dev": "npm --workspace @match/web run dev",
     "build": "npm --workspace @match/web run build",

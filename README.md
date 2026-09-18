@@ -106,8 +106,11 @@ Wired through the dashboard's Git integration. Connect this repository under
 | Root directory | *(repository root — the build uses npm workspaces)* |
 | Environment variable | `NODE_VERSION` = `22` |
 
-`NODE_VERSION` matters: the Pages default is older than this build needs, and the failure it causes
-does not name Node. Leave `PUBLIC_BASE_PATH` unset, because Pages serves the app from the domain
+`NODE_VERSION` matters, and `.node-version` in the repository root says the same thing so a fresh
+clone or a new Pages project gets it without anyone remembering: PDF.js requires Node 22.13 or
+newer, the Pages default is older, and the failure it causes does not name Node anywhere. Vite
+alone is happy on Node 18, so a build from before the PDF reader existed will have succeeded on
+the default and the next one will not — which looks like an unrelated regression. Leave `PUBLIC_BASE_PATH` unset, because Pages serves the app from the domain
 root. Every push to `main` then deploys itself, and `_redirects` hands React Router's own paths
 (`/calendar`, `/people`, `/more`) back to `index.html` instead of 404ing on a direct visit or a
 refresh.
