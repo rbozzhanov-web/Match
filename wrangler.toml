@@ -7,6 +7,6 @@
 #
 # Leave PUBLIC_BASE_PATH unset for Pages: the app is served from the domain root here, unlike the
 # GitHub Pages deploy, which serves it from /Match/.
-name = "match"
+name = "match-3v3"
 compatibility_date = "2026-09-18"
 pages_build_output_dir = "apps/web/dist"

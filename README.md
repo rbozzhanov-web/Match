@@ -112,9 +112,11 @@ root. Every push to `main` then deploys itself, and `_redirects` hands React Rou
 (`/calendar`, `/people`, `/more`) back to `index.html` instead of 404ing on a direct visit or a
 refresh.
 
-`wrangler.toml` carries the same output directory, so a direct deploy is the alternative:
-`npm run deploy:cloudflare`, with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the
-environment.
+`wrangler.toml` carries the project name and the same output directory, so a direct deploy is the
+alternative: `npm run deploy:cloudflare`, with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+in the environment. The name there has to match the Pages project exactly — `match` was already
+taken on `pages.dev`, so this one is **`match-3v3`**, serving at
+<https://match-3v3.pages.dev>.
 
 ### GitHub Pages
 
