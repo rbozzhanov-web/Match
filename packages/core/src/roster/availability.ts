@@ -92,7 +92,15 @@ interface DutySpan {
  * though the roster prints nothing on it.
  */
 export function buildAvailability(roster: Roster, options: AvailabilityOptions = {}): DayAvailability[] {
-  const settings = { ...DEFAULT_AVAILABILITY_OPTIONS, ...options };
+  // Not a spread: a key explicitly set to `undefined` would replace the default rather than leave
+  // it alone, which is how an options object with a missing field silently becomes a zero buffer.
+  const settings: Required<AvailabilityOptions> = {
+    base: options.base ?? DEFAULT_AVAILABILITY_OPTIONS.base,
+    preDutyBufferMinutes: options.preDutyBufferMinutes ?? DEFAULT_AVAILABILITY_OPTIONS.preDutyBufferMinutes,
+    postDutyBufferMinutes: options.postDutyBufferMinutes ?? DEFAULT_AVAILABILITY_OPTIONS.postDutyBufferMinutes,
+    dayStartMinutes: options.dayStartMinutes ?? DEFAULT_AVAILABILITY_OPTIONS.dayStartMinutes,
+    dayEndMinutes: options.dayEndMinutes ?? DEFAULT_AVAILABILITY_OPTIONS.dayEndMinutes,
+  };
   const base = (roster.base ?? settings.base).toUpperCase();
   const coverage = rosterCoverage(roster);
   const dates = eachDate(coverage.start, coverage.end);

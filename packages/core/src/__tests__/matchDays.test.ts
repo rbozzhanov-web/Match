@@ -99,6 +99,28 @@ describe('when you are not in the same place', () => {
     expect(layover.headline).toBe('All day together in DXB');
   });
 
+  it('keeps layovers on when the caller passes an options object with the field unset', () => {
+    // A settings object that does not carry the field hands through `undefined`. Spreading that
+    // over the defaults would replace `true` with `undefined` and quietly disable shared layovers.
+    const trip = {
+      start: '2026-10-01',
+      end: '2026-10-02',
+      duties: [{
+        date: '2026-10-01',
+        start: '2026-10-01T06:00',
+        end: '2026-10-01T12:00',
+        flights: [flight('2026-10-01', '901', 'ALA', 'DXB', '07:00', '11:00')],
+      }],
+    };
+    const days = matchDays(availability({ ...trip }), availability({ ...trip }), {
+      allowLayoverMatches: undefined,
+      minimumMinutes: undefined,
+      includeStandby: undefined,
+    });
+    expect(days[1].matched).toBe(true);
+    expect(days[1].kind).toBe('layover');
+  });
+
   it('can be told to ignore layover matches', () => {
     const trip = {
       start: '2026-10-01',

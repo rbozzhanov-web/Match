@@ -64,6 +64,23 @@ export const DEFAULT_MATCH_OPTIONS: Required<MatchOptions> = {
   includeStandby: true,
 };
 
+/**
+ * Fills in whatever the caller did not set.
+ *
+ * Deliberately not a spread. `{ ...defaults, ...options }` keeps a key whose value is `undefined`,
+ * so a caller passing `allowLayoverMatches: settings.allowLayoverMatches` from a settings object
+ * that happens not to carry the field overwrites the default with `undefined` — which is falsy,
+ * and silently turns shared layovers off. The symptom is a feature that simply never fires, with
+ * nothing anywhere to say why.
+ */
+function resolveMatchOptions(options: MatchOptions): Required<MatchOptions> {
+  return {
+    minimumMinutes: options.minimumMinutes ?? DEFAULT_MATCH_OPTIONS.minimumMinutes,
+    allowLayoverMatches: options.allowLayoverMatches ?? DEFAULT_MATCH_OPTIONS.allowLayoverMatches,
+    includeStandby: options.includeStandby ?? DEFAULT_MATCH_OPTIONS.includeStandby,
+  };
+}
+
 /** States that can never be shared, whatever the clock says. */
 const UNAVAILABLE: ReadonlySet<string> = new Set(['unknown']);
 
@@ -80,7 +97,7 @@ export function matchDays(
   them: DayAvailability[],
   options: MatchOptions = {},
 ): MatchDay[] {
-  const settings = { ...DEFAULT_MATCH_OPTIONS, ...options };
+  const settings = resolveMatchOptions(options);
   const theirs = availabilityByDate(them);
 
   const days: MatchDay[] = [];
@@ -98,7 +115,7 @@ export function matchOneDay(
   them: DayAvailability,
   options: MatchOptions = {},
 ): MatchDay {
-  const settings = { ...DEFAULT_MATCH_OPTIONS, ...options };
+  const settings = resolveMatchOptions(options);
   const miss = (reason: MissReason, headline: string): MatchDay => ({
     date: you.date,
     matched: false,
