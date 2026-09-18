@@ -26,4 +26,12 @@ jobs:
           test -f apps/web/dist/manifest.webmanifest
           test -f apps/web/dist/sw.js
           test -f apps/web/dist/icon-512.png
-          grep -q 'serviceWorker' apps/web/dist/index.html
+          test -f apps/web/dist/icon-maskable-512.png
+          # Cloudflare Pages serves this: without it, a refresh on /calendar 404s.
+          test -f apps/web/dist/_redirects
+          grep -q 'rel="manifest"' apps/web/dist/index.html
+          # The registration is in the entry bundle rather than in index.html, because main.tsx
+          # imports virtual:pwa-register and vite-plugin-pwa then injects no script tag of its own.
+          grep -rqs 'serviceWorker' apps/web/dist/assets/
+          # navigateFallback has to name a precached entry, or offline never starts.
+          grep -q 'index.html' apps/web/dist/sw.js
