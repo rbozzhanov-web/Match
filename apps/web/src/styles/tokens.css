@@ -1,0 +1,87 @@
+/*
+ * One palette, two themes.
+ *
+ * Warmer than the roster apps this is built from, and deliberately so: eScrew is a work tool and
+ * reads cool and institutional, while this one is about the days off between the work. The state
+ * colours are the exception — they carry meaning, so they stay close to the roster's own language
+ * of blue for flying and green for free.
+ */
+:root {
+  color-scheme: light;
+
+  --ink: #2b1a2f;
+  --ink-soft: #6b5570;
+  --ink-faint: #9c8aa0;
+
+  --surface: #fdf7f7;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4ecee;
+  --border: #ead9dd;
+  --border-strong: #d9c2c8;
+
+  --accent: #c4577c;
+  --accent-soft: #fbe9ef;
+  --accent-strong: #a13a5f;
+  --accent-ink: #ffffff;
+
+  --state-free: #3f9d68;
+  --state-free-soft: #e8f5ed;
+  --state-leave: #2f8f8a;
+  --state-leave-soft: #e4f3f2;
+  --state-standby: #c08a2e;
+  --state-standby-soft: #faf0dd;
+  --state-duty: #3d72c4;
+  --state-duty-soft: #e9f0fb;
+  --state-away: #8a7f95;
+  --state-away-soft: #efecf2;
+  --state-sick: #b8563f;
+  --state-sick-soft: #fae9e5;
+  --state-unknown: #c9bfcc;
+  --state-unknown-soft: #f3eff4;
+
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --shadow-card: 0 1px 2px rgba(43, 26, 47, .06), 0 8px 24px rgba(43, 26, 47, .06);
+  --shadow-dock: 0 -1px 0 var(--border), 0 -12px 32px rgba(43, 26, 47, .07);
+
+  --dock-height: 64px;
+  --page-gutter: 16px;
+}
+
+:root.theme-dark {
+  color-scheme: dark;
+
+  --ink: #f3e9ee;
+  --ink-soft: #bda8b6;
+  --ink-faint: #8c7a88;
+
+  --surface: #171018;
+  --surface-raised: #221a24;
+  --surface-sunken: #120c13;
+  --border: #332836;
+  --border-strong: #47394b;
+
+  --accent: #e78aa8;
+  --accent-soft: #38222c;
+  --accent-strong: #f2a6bf;
+  --accent-ink: #24121a;
+
+  --state-free: #6fce97;
+  --state-free-soft: #1b2f23;
+  --state-leave: #62cac4;
+  --state-leave-soft: #142d2c;
+  --state-standby: #e0b463;
+  --state-standby-soft: #2e2617;
+  --state-duty: #77a8ef;
+  --state-duty-soft: #1a2436;
+  --state-away: #a99cb3;
+  --state-away-soft: #262230;
+  --state-sick: #e08a72;
+  --state-sick-soft: #31201c;
+  --state-unknown: #5b4f5e;
+  --state-unknown-soft: #1d181f;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .35);
+  --shadow-dock: 0 -1px 0 var(--border), 0 -12px 32px rgba(0, 0, 0, .45);
+}
