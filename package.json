@@ -12,7 +12,7 @@
     "test": "vitest run --workspace vitest.workspace.ts",
     "test:core": "vitest run --project core",
     "test:web": "vitest run --project web",
-    "typecheck": "tsc -b apps/web/tsconfig.json",
+    "typecheck": "tsc -b packages/core/tsconfig.json apps/web/tsconfig.json",
     "generate:icons": "node scripts/generate-icons.mjs"
   },
   "devDependencies": {

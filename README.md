@@ -59,11 +59,19 @@ off in a row is a trip, not three evenings. A run breaks on a gap *or* on a chan
 
 Three ways in, because two people rarely keep their time the same way:
 
-- **AIMS Crew Schedule** — save the fully loaded Crew Schedule as a Web Archive and import it.
-  Imports merge, so coverage grows month by month rather than being replaced.
+- **A roster file** — either AIMS export works and the app tells them apart from the file itself:
+  the **Personal Crew Schedule Report as a PDF**, or the **Crew Schedule saved as a web archive**.
+  Imports merge, so coverage grows month by month rather than being replaced. The PDF reader also
+  picks up the crew member's base from the report header, which is the station every day is then
+  measured against.
 - **Typed day codes** — one line per day, `2026-10-03 OFF`. Codes follow the roster's own table
   (`OFF`, `DOFF`, `VAC`, `AVLB`, `HOMS`, `SICK`…).
 - **Weekends off** — a plain working week, for the half of these couples who do not fly.
+
+A roster only ever answers for the days it actually describes. A PDF whose header claims a month
+while its grid holds a week covers that week, and the rest of the month stays `unknown` rather than
+quietly reading as free — the difference between five days together and twenty-nine invented ones.
+PDF.js is loaded only when a PDF is picked, and is precached, so an import works offline too.
 
 A sample month is available on the Rosters tab to see how a pair of schedules reads before you have
 your own.
@@ -123,9 +131,9 @@ Real rosters contain personal information and must not be committed to this repo
 
 ## Not done yet
 
-- **Same-flight detection.** An AIMS schedule carries the crew list per sector, so two people
+- **Same-flight detection.** Both roster exports carry the crew list per sector, so two people
   rostered on the same aircraft is knowable and is arguably the most literal "together" of all. The
-  importer currently drops crew; the match engine has no notion of it.
+  importers currently drop crew; the match engine has no notion of it.
 - **Time zones.** Matching is refused across stations rather than computed, so a shared layover is
   found but "you land in Almaty as she leaves Dubai" is not modelled. eScrew's `stationTime` has the
   zone table this would need.

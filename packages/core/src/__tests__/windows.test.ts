@@ -73,7 +73,7 @@ describe('grouping days into runs', () => {
           flights: [flight('2026-10-03', '902', 'DXB', 'ALA', '02:00', '05:00')],
         },
       ],
-    } as const;
+    };
     const days = matchDays(buildAvailability(roster({ ...trip }), window), buildAvailability(roster({ ...trip }), window));
     const windows = togetherWindows(days);
 

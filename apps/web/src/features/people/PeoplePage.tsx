@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { addDays, rosterCoverage, type Roster } from '@match/core';
 
 import { useMatch } from '../../app/matchState';
-import { mergeRoster, parseAimsArchive } from '../../roster/aims';
+import { importRosterFile, mergeRoster } from '../../roster/importRoster';
 import { parseDayCodeText, weekendsOff } from '../../roster/quickRoster';
 import { sampleRosters } from '../../roster/sample';
 import { formatDate, today } from '../format';
@@ -10,9 +10,10 @@ import { formatDate, today } from '../format';
 /**
  * Where the two rosters come in.
  *
- * Three ways in, because two people rarely keep their time the same way: an AIMS Crew Schedule for
- * whoever flies, a pasted list of dates for whoever does not, and a plain working week for when
- * even that is more effort than the answer is worth.
+ * Several ways in, because two people rarely keep their time the same way: a roster file for
+ * whoever flies — either export, PDF or web archive, the app works out which — a pasted list of
+ * dates for whoever does not, and a plain working week for when even that is more effort than the
+ * answer is worth.
  */
 export function PeoplePage() {
   const { you, them, importRoster, removeRoster, renamePerson } = useMatch();
@@ -74,15 +75,22 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const readArchive = async (file: File) => {
+  const readRosterFile = async (file: File) => {
     setBusy(true);
     setError(undefined);
     try {
-      const parsed = await parseAimsArchive(file, person.base);
+      const imported = await importRosterFile(file, person.base);
       // Merging rather than replacing: two people comparing months import several files each, and
       // a match only reaches as far as the narrower roster's coverage.
-      onImport(mergeRoster(person.roster, parsed));
-      onNotice(`Imported ${parsed.duties.length} duties for ${person.name}.`);
+      onImport(mergeRoster(person.roster, imported.roster));
+      const days = imported.roster.dayCodes?.length ?? 0;
+      const kind = imported.source === 'pdf' ? 'PDF' : 'AIMS archive';
+      onNotice(
+        `Read ${imported.roster.duties.length} duties and ${days} rostered days off for ${person.name} from the ${kind}.`
+        // A roster the reader only partly understood is worth saying out loud: the days it did
+        // read are still usable, and silence here would look like a clean import.
+        + (imported.unreadCells.length ? ` ${imported.unreadCells.length} cells were not recognised.` : ''),
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not read that file.');
     } finally {
@@ -136,7 +144,7 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
 
       <div className="panel__actions">
         <button className="button" disabled={busy} onClick={() => fileInput.current?.click()} type="button">
-          {busy ? 'Reading…' : 'Import AIMS schedule'}
+          {busy ? 'Reading…' : 'Import roster file'}
         </button>
         <button className="button button--ghost" onClick={addWorkingWeeks} type="button">Weekends off</button>
         {person.roster ? (
@@ -145,15 +153,19 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
       </div>
 
       <input
-        accept=".webarchive,.html,.htm,.mht,.mhtml"
+        accept=".pdf,application/pdf,.webarchive,.html,.htm,.mht,.mhtml"
         className="visually-hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) void readArchive(file);
+          if (file) void readRosterFile(file);
         }}
         ref={fileInput}
         type="file"
       />
+      <p className="panel__hint">
+        Either AIMS export works: the Personal Crew Schedule Report as a PDF, or the Crew Schedule
+        saved as a web archive.
+      </p>
 
       <details className="panel__paste">
         <summary>Type the days instead</summary>

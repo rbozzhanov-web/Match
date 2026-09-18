@@ -88,7 +88,7 @@ describe('when you are not in the same place', () => {
         end: '2026-10-01T12:00',
         flights: [flight('2026-10-01', '901', 'ALA', 'DXB', '07:00', '11:00')],
       }],
-    } as const;
+    };
     const you = availability({ ...trip });
     const them = availability({ ...trip });
 
@@ -109,7 +109,7 @@ describe('when you are not in the same place', () => {
         end: '2026-10-01T12:00',
         flights: [flight('2026-10-01', '901', 'ALA', 'DXB', '07:00', '11:00')],
       }],
-    } as const;
+    };
     const days = matchDays(availability({ ...trip }), availability({ ...trip }), { allowLayoverMatches: false });
     expect(days[1].matched).toBe(false);
   });

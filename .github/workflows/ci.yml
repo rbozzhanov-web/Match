@@ -35,3 +35,8 @@ jobs:
           grep -rqs 'serviceWorker' apps/web/dist/assets/
           # navigateFallback has to name a precached entry, or offline never starts.
           grep -q 'index.html' apps/web/dist/sw.js
+          # PDF.js must stay out of the entry chunk and inside the precache. Workbox silently drops
+          # any file over its size limit, and the worker is the largest thing here by far — losing
+          # it from the manifest would break PDF import offline with no error anywhere.
+          test "$(ls apps/web/dist/assets/pdf.worker.min-*.mjs | wc -l)" -eq 1
+          grep -qE 'pdf\.worker\.min-[A-Za-z0-9_-]+\.mjs' apps/web/dist/sw.js

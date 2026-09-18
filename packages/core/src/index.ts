@@ -69,3 +69,18 @@ export {
 } from './match/windows';
 
 export { buildTogetherIcs, type IcsOptions } from './calendar/ics';
+
+/*
+ * The PDF roster reader. Pure text-position parsing with no dataset behind it, so it costs little
+ * to carry here; the weight of a PDF import is PDF.js itself, which lives in the app and is loaded
+ * only when someone actually picks a file.
+ */
+export {
+  parsePdfRoster,
+  type ParsedPdfRoster,
+} from './roster/pdf/parseRoster';
+export type { ExtractedPage, TextItem } from './roster/pdf/types';
+export { extractDayColumns, dedupeColumns, resolveGridDate, type DayColumn } from './roster/pdf/grid';
+export { readGrid, type GridReading } from './roster/pdf/readGrid';
+export { tokenizeLines, type Line } from './roster/pdf/tokenize';
+export { parsePeriod, parseSubject, type ReportPeriod, type ReportSubject } from './roster/pdf/header';

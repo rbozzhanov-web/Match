@@ -16,7 +16,7 @@ const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function CalendarPage() {
   const { days, yourDays, theirDays, you, them, hasBothRosters } = useMatch();
   const now = today();
-  const [monthAnchor, setMonthAnchor] = useState(() => (days.length ? days[0].date.slice(0, 7) : now.slice(0, 7)));
+  const [pickedMonth, setPickedMonth] = useState<string | undefined>(undefined);
   const [selected, setSelected] = useState<string | undefined>(undefined);
 
   const byDate = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
@@ -28,6 +28,19 @@ export function CalendarPage() {
     if (!set.size) set.add(now.slice(0, 7));
     return [...set].sort();
   }, [days, now]);
+
+  /*
+   * Which month is on screen, derived rather than stored.
+   *
+   * Holding it in state alone meant it was decided on the first render — before any roster had
+   * been imported — and then never moved, so importing a roster for another month left the grid
+   * sitting on an empty one with both arrows disabled and no way out. The pick still wins while
+   * it points at a month there is data for; otherwise this falls to today, or to wherever the
+   * roster actually starts.
+   */
+  const monthAnchor = pickedMonth && months.includes(pickedMonth)
+    ? pickedMonth
+    : months.includes(now.slice(0, 7)) ? now.slice(0, 7) : months[0];
 
   const cells = useMemo(() => buildGrid(monthAnchor), [monthAnchor]);
   const selectedDay = selected ? byDate.get(selected) : undefined;
@@ -50,7 +63,7 @@ export function CalendarPage() {
         <button
           aria-label="Previous month"
           disabled={months.indexOf(monthAnchor) <= 0}
-          onClick={() => setMonthAnchor(months[Math.max(0, months.indexOf(monthAnchor) - 1)])}
+          onClick={() => setPickedMonth(months[Math.max(0, months.indexOf(monthAnchor) - 1)])}
           type="button"
         >
           ‹
@@ -59,7 +72,7 @@ export function CalendarPage() {
         <button
           aria-label="Next month"
           disabled={months.indexOf(monthAnchor) >= months.length - 1}
-          onClick={() => setMonthAnchor(months[Math.min(months.length - 1, months.indexOf(monthAnchor) + 1)])}
+          onClick={() => setPickedMonth(months[Math.min(months.length - 1, months.indexOf(monthAnchor) + 1)])}
           type="button"
         >
           ›

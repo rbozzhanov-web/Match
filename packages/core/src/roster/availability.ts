@@ -203,7 +203,14 @@ function dutySpans(roster: Roster, settings: Required<AvailabilityOptions>): Dut
   for (const ground of roster.groundDuties ?? []) {
     const start = hhmmToMinutes(ground.start);
     const end = hhmmToMinutes(ground.end);
-    if (start === null || end === null) continue;
+    if (start === null || end === null) {
+      // A rostered ground duty the report gives no hours for — a course, an office day, a code the
+      // grid printed bare. Something is on that day, and the honest reading of "something, we do
+      // not know when" is that the day is spoken for: treating it as free would offer up a day
+      // that is not there. No buffers, because there is no report time to run up to.
+      spans.push({ startDate: ground.date, start: 0, end: MINUTES_PER_DAY, flights: [] });
+      continue;
+    }
     spans.push({
       startDate: ground.date,
       start: start - settings.preDutyBufferMinutes,
