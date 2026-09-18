@@ -85,13 +85,33 @@ Chromium. It is not part of the build.
 
 A static build: `npm run build` emits `apps/web/dist`, and that directory is the whole site.
 
-**Cloudflare Pages** — build command `npm run build`, output directory `apps/web/dist`, root
-directory the repository root (the build uses npm workspaces), and `NODE_VERSION` = `22`. Leave
-`PUBLIC_BASE_PATH` unset; Pages serves from the domain root, and `_redirects` hands the router's own
-paths back to `index.html` instead of 404ing on a refresh.
+### Cloudflare Pages (primary)
 
-**GitHub Pages** — `.github/workflows/deploy-pages.yml` sets `PUBLIC_BASE_PATH=/Match/`, because that
-target serves from a repository subpath.
+Wired through the dashboard's Git integration. Connect this repository under
+*Workers & Pages → Create → Pages → Connect to Git*, pick `main` as the production branch, and set:
+
+| Setting | Value |
+|---|---|
+| Framework preset | None |
+| Build command | `npm run build` |
+| Build output directory | `apps/web/dist` |
+| Root directory | *(repository root — the build uses npm workspaces)* |
+| Environment variable | `NODE_VERSION` = `22` |
+
+`NODE_VERSION` matters: the Pages default is older than this build needs, and the failure it causes
+does not name Node. Leave `PUBLIC_BASE_PATH` unset, because Pages serves the app from the domain
+root. Every push to `main` then deploys itself, and `_redirects` hands React Router's own paths
+(`/calendar`, `/people`, `/more`) back to `index.html` instead of 404ing on a direct visit or a
+refresh.
+
+`wrangler.toml` carries the same output directory, so a direct deploy is the alternative:
+`npm run deploy:cloudflare`, with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the
+environment.
+
+### GitHub Pages
+
+`.github/workflows/deploy-pages.yml` sets `PUBLIC_BASE_PATH=/Match/`, because that target serves the
+app from a repository subpath rather than the root.
 
 ## Data
 

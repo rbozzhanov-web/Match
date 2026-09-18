@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "npm --workspace @match/web run dev",
     "build": "npm --workspace @match/web run build",
+    "deploy:cloudflare": "npm run build && npx wrangler@latest pages deploy",
     "test": "vitest run --workspace vitest.workspace.ts",
     "test:core": "vitest run --project core",
     "test:web": "vitest run --project web",

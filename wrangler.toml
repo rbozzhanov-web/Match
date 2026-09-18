@@ -1,0 +1,12 @@
+# Cloudflare Pages project for Match.
+#
+# The site is static: `npm run build` emits apps/web/dist, and that directory is the whole thing
+# Pages serves. Deploy it either by connecting this repository in the Cloudflare dashboard (build
+# command `npm run build`, output directory `apps/web/dist`) or directly with
+# `npm run deploy:cloudflare`, which needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+#
+# Leave PUBLIC_BASE_PATH unset for Pages: the app is served from the domain root here, unlike the
+# GitHub Pages deploy, which serves it from /Match/.
+name = "match"
+compatibility_date = "2026-09-18"
+pages_build_output_dir = "apps/web/dist"
