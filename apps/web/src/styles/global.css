@@ -59,18 +59,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .primary-tab-header__accessible-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
 /* The titles are stacked and cross-faded so a swipe reads as one label changing rather than as
-   four labels sliding past. */
-.primary-tab-header__titles { display: grid; }
+   four labels sliding past. Opacity only, deliberately: a translateY here as well used to promote
+   every stacked span to its own compositing layer, and WebKit rasterizes text on a promoted layer
+   without the subpixel hinting it gives ordinary text — the title read faintly blurred on every
+   tab, including the one showing on first load, before any transition had ever run. */
+.primary-tab-header__titles {
+  display: grid;
+  margin-top: 4mm;
+}
 .primary-tab-header__titles > span {
   grid-area: 1 / 1;
   font-size: 28px;
   font-weight: 680;
   letter-spacing: -.02em;
   opacity: 0;
-  transform: translateY(4px);
-  transition: opacity .22s ease, transform .22s ease;
+  transition: opacity .22s ease;
 }
-.primary-tab-header__titles > span.is-visible { opacity: 1; transform: none; }
+.primary-tab-header__titles > span.is-visible { opacity: 1; }
 
 .app-frame__content { position: relative; z-index: 1; flex: 1; min-height: 0; }
 
