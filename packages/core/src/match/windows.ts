@@ -1,5 +1,5 @@
 import { addDays, formatDuration, type Interval, intersectIntervals } from '../time';
-import type { MatchDay, MatchQuality } from './matchDays';
+import { matchOneDay, type MatchDay, type MatchQuality } from './matchDays';
 
 /**
  * A run of consecutive days together.
@@ -39,7 +39,14 @@ const QUALITY_ORDER: MatchQuality[] = ['brief', 'morning', 'evening', 'half-day'
  * one two-day window would describe a trip that never happened.
  */
 export function togetherWindows(days: MatchDay[]): TogetherWindow[] {
-  const matched = days.filter((day) => day.matched).sort((a, b) => a.date.localeCompare(b.date));
+  const matched = days.filter(day => day.matched).flatMap(day => {
+    if (!day.sessions?.length) return [day];
+    return day.sessions.map(session => matchOneDay(
+      { ...day.you, locations: day.you.locations?.filter(slot => slot.station === session.station) },
+      { ...day.them, locations: day.them.locations?.filter(slot => slot.station === session.station) },
+      { minimumMinutes: 0 },
+    ));
+  }).sort((a, b) => (a.station ?? '').localeCompare(b.station ?? '') || a.date.localeCompare(b.date));
   const windows: TogetherWindow[] = [];
   let run: MatchDay[] = [];
 
@@ -58,7 +65,7 @@ export function togetherWindows(days: MatchDay[]): TogetherWindow[] {
   }
   flush();
 
-  return windows;
+  return windows.sort((a,b) => a.start.localeCompare(b.start) || a.station.localeCompare(b.station));
 }
 
 /** The longest run in a set — the one worth booking something around. */
@@ -95,7 +102,11 @@ function toWindow(run: MatchDay[]): TogetherWindow {
     dates: run.map((day) => day.date),
     days: run.length,
     // A night belongs to the gap between two consecutive days together, so a single day has none.
-    nights: Math.max(0, run.length - 1),
+    nights: run.slice(1).filter((day, i) => {
+      const previous = run[i];
+      const free = (person: MatchDay['you'], start: number, end: number) => person.fullDayLocations?.some(slot => slot.station === first.station && slot.start <= start && slot.end >= end);
+      return free(previous.you, 23 * 60, 1440) && free(previous.them, 23 * 60, 1440) && free(day.you, 0, 8 * 60) && free(day.them, 0, 8 * 60);
+    }).length,
     minutes,
     station: first.station ?? '',
     kind: first.kind ?? 'home',

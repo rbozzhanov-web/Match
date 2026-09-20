@@ -24,6 +24,7 @@ const PDF_EXTENSION = /\.pdf$/i;
 const PDF_MAGIC = '%PDF-';
 
 export async function importRosterFile(file: File, base = 'ALA'): Promise<RosterImport> {
+  if (file.size > 25_000_000) throw new Error('Roster file is too large (maximum 25 MB).');
   if (await looksLikePdf(file)) {
     // PDF.js is several times the size of everything else in this app, so it is fetched only when
     // a PDF is actually picked rather than carried in the entry chunk for everyone.

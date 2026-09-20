@@ -67,3 +67,33 @@ describe('merging imports', () => {
     expect(merged.dayCodes?.[0].code).toBe('VAC');
   });
 });
+
+describe('audit regressions: corrected imports', () => {
+  it('preserves gaps between months', () => {
+    const merged = mergeRoster(parseDayCodeText('2026-09-01 OFF'), parseDayCodeText('2026-11-01 OFF')!);
+    expect(buildAvailability(merged).find(d => d.date === '2026-10-15')?.state).toBe('unknown');
+  });
+  it('replaces a cancelled flight and its old day code with the latest snapshot', () => {
+    const old = { ...parseDayCodeText('2026-09-20 OFF')!, duties: [{ date:'2026-09-20', start:'2026-09-20T10:00',end:'2026-09-20T16:00',flights:[] }],groundDuties:[{date:'2026-09-20',code:'SIM'}] };
+    const merged = mergeRoster(old, parseDayCodeText('2026-09-20 VAC')!);
+    expect(merged.duties).toEqual([]); expect(merged.groundDuties).toEqual([]);
+    expect(merged.dayCodes?.[0].code).toBe('VAC');
+  });
+  it('uses the latest report and retains non-overlapping dates', () => {
+    const old = { ...parseDayCodeText('2026-09-20 OFF\n2026-09-21 OFF')!, duties:[{date:'2026-09-20',start:'2026-09-20T15:00',end:'2026-09-20T18:00',flights:[]}] };
+    const fresh = {...parseDayCodeText('2026-09-20 OFF')!, duties:[{...old.duties[0],start:'2026-09-20T10:00'}]};
+    const merged = mergeRoster(old, fresh);
+    expect(merged.duties[0].start).toBe('2026-09-20T10:00'); expect(merged.coveredDates).toContain('2026-09-21');
+  });
+});
+
+describe('AIMS time zone boundaries', () => {
+  it('does not roll a westbound arrival or following departure into tomorrow', async () => {
+    const {parseAimsArchive} = await import('../aims');
+    const html = `CrewSchedule localStorage['PeriodStart']='2026-09-20'; localStorage['PeriodEnd']='2026-09-20'; var initialResult = ${JSON.stringify({SchedulerEvents:[{start:'2026-09-20T09:00',end:'2026-09-20T18:00',details:'1 - ALA (1000) - IST (0900) 2 - IST (1000) - ALA (1700)'}]})};`;
+    const bytes = new TextEncoder().encode(html);
+    const file = {arrayBuffer: async () => bytes.buffer} as File;
+    const roster=await parseAimsArchive(file);
+    expect(roster.duties[0].flights.map(f=>[f.date,f.arrivalDate])).toEqual([['2026-09-20',undefined],['2026-09-20',undefined]]);
+  });
+});

@@ -54,6 +54,7 @@ export interface GridReading {
   dates: string[];
   /** Cells the reader could not account for. Surfaced so a bad import is visible, not silent. */
   unreadCells: string[];
+  uncertainDates: string[];
 }
 
 const DELAY_LABEL = 'Delay';
@@ -76,6 +77,7 @@ export function readGrid(columns: DayColumn[], periodStart: string, periodEnd: s
   const dayCodes: { date: string; code: string }[] = [];
   const groundDuties: GridGroundDuty[] = [];
   const unreadCells: string[] = [];
+  const uncertainDates = new Set<string>();
 
   const dates: string[] = [];
   let carried: GridSector | undefined;
@@ -103,8 +105,9 @@ export function readGrid(columns: DayColumn[], periodStart: string, periodEnd: s
       // The tail of a sector that started in an earlier column.
       if (cell === CONTINUED_GLYPH) {
         i += 1;
-        if (!carried) continue;
+        if (!carried) { uncertainDates.add(date); continue; }
         i = completeCarriedSector(carried, cells, i, date);
+        if (!carried.arrivalAirport || !carried.timeIn) { uncertainDates.add(date); uncertainDates.add(carried.date); }
         sectors.push(carried);
         carried = undefined;
         continue;
@@ -134,6 +137,7 @@ export function readGrid(columns: DayColumn[], periodStart: string, periodEnd: s
         const duty = currentDuty ?? openDuty();
         const read = readSector(cells, i, date, duty);
         if (!read) {
+          uncertainDates.add(date);
           unreadCells.push(cell);
           i += 1;
           continue;
@@ -177,12 +181,15 @@ export function readGrid(columns: DayColumn[], periodStart: string, periodEnd: s
         continue;
       }
 
+      uncertainDates.add(date);
       unreadCells.push(cell);
       i += 1;
     }
   }
 
+  if (carried) uncertainDates.add(carried.date);
   return {
+    uncertainDates: [...uncertainDates],
     sectors,
     duties,
     dayCodes: dedupeByDate(dayCodes),

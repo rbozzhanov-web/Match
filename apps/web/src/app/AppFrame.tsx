@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { CalendarPage } from '../features/calendar/CalendarPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { useMatch } from './matchState';
 import { TogetherPage } from '../features/together/TogetherPage';
 
 type ThemePreference = 'system' | 'light' | 'dark';
@@ -35,6 +36,7 @@ function scrollElement(element: HTMLElement, options: ScrollToOptions) {
  * the tree mid-gesture.
  */
 export function AppFrame() {
+  const { saved, demo, endDemo } = useMatch();
   const location = useLocation();
   const navigate = useNavigate();
   const pagerRef = useRef<HTMLDivElement>(null);
@@ -158,6 +160,8 @@ export function AppFrame() {
               key={items[index].to}
               ref={(element) => { pageRefs.current[index] = element; }}
             >
+              {!saved && !demo ? <p className="notice" role="alert">Changes are not saved on this device. Export a backup in More before closing.</p> : null}
+              {demo ? <p className="notice">Demo · not saved <button className="button button--ghost" onClick={endDemo}>Exit demo</button></p> : null}
               {page}
             </div>
           ))}

@@ -1,3 +1,4 @@
+import { compareFlights, locatedAvailability, normalizeStation, type LocatedInterval } from './location';
 import {
   MINUTES_PER_DAY,
   addDays,
@@ -6,11 +7,10 @@ import {
   hhmmToMinutes,
   type Interval,
   mergeIntervals,
-  subtractIntervals,
   totalMinutes,
 } from '../time';
 import { classifyDayCode, describeDayCode } from './dayCodes';
-import { rosterCoverage, type Roster, type RosterFlight } from './contract';
+import { rosterCoverage, rosterDates, type Roster, type RosterFlight } from './contract';
 
 /**
  * How a day reads for someone who wants to be in it with you.
@@ -48,6 +48,10 @@ export interface DayAvailability {
   free: Interval[];
   freeMinutes: number;
   flights: DayFlight[];
+  locations?: LocatedInterval[];
+  fullDayLocations?: LocatedInterval[];
+  issue?: string;
+  sociableMinutes?: number;
 }
 
 export interface AvailabilityOptions {
@@ -101,11 +105,14 @@ export function buildAvailability(roster: Roster, options: AvailabilityOptions =
     dayStartMinutes: options.dayStartMinutes ?? DEFAULT_AVAILABILITY_OPTIONS.dayStartMinutes,
     dayEndMinutes: options.dayEndMinutes ?? DEFAULT_AVAILABILITY_OPTIONS.dayEndMinutes,
   };
-  const base = (roster.base ?? settings.base).toUpperCase();
+  const base = normalizeStation(roster.base ?? settings.base);
   const coverage = rosterCoverage(roster);
   const dates = eachDate(coverage.start, coverage.end);
   if (!dates.length) return [];
 
+  const covered = new Set(rosterDates(roster));
+  const uncertain = new Set(roster.uncertainDates ?? []);
+  const located = locatedAvailability(roster, base, settings);
   const spans = dutySpans(roster, settings);
   const busyByDate = spreadBusy(spans, settings);
   const stationByDate = trackStations(roster, dates, base);
@@ -113,21 +120,27 @@ export function buildAvailability(roster: Roster, options: AvailabilityOptions =
   const flightsByDate = groupFlights(roster);
 
   return dates.map((date) => {
-    const station = stationByDate.get(date) ?? base;
+    const station = normalizeStation(stationByDate.get(date) ?? base);
     const atBase = station === base;
-    const busy = mergeIntervals(busyByDate.get(date) ?? []);
-    const flights = flightsByDate.get(date) ?? [];
     const code = codeByDate.get(date);
-    const state = resolveState({ code, flights: flights.length > 0, busy, atBase });
+    const bareDuty = code && classifyDayCode(code) === 'duty' && !(roster.groundDuties ?? []).some(d => d.date === date);
+    const busy = mergeIntervals([...(busyByDate.get(date) ?? []), ...(bareDuty ? [{ start: 0, end: 1440 }] : [])]);
+    const flights = flightsByDate.get(date) ?? [];
+    const state = !covered.has(date) || uncertain.has(date) || located.issues.has(date) ? 'unknown' : resolveState({ code, flights: flights.length > 0 || roster.duties.some(duty => duty.date === date), busy, atBase });
     const sociable: Interval = { start: settings.dayStartMinutes, end: settings.dayEndMinutes };
     // Free time is computed wherever the person is, including down route, and the station is
     // carried beside it. Whether that time can be shared is not this layer's question: two people
     // free in Dubai on the same night are as together as two people free at home, and it is the
     // match engine's station check — not a blanked-out day here — that tells the two apart.
-    const free = state === 'unknown' ? [] : subtractIntervals(sociable, busy);
+    const locations = state === 'unknown' || bareDuty ? [] : located.slots.get(date) ?? [];
+    const free = mergeIntervals(locations.map(({start, end}) => ({start, end})));
 
     return {
       date,
+      locations,
+      fullDayLocations: state === 'unknown' || bareDuty ? [] : located.fullDay.get(date) ?? [],
+      issue: located.issues.get(date) ?? (uncertain.has(date) ? 'Some roster entries were not recognised.' : undefined),
+      sociableMinutes: sociable.end - sociable.start,
       state,
       station,
       atBase,
@@ -187,7 +200,7 @@ function dutySpans(roster: Roster, settings: Required<AvailabilityOptions>): Dut
   const spans: DutySpan[] = [];
 
   for (const duty of roster.duties) {
-    const flights = [...duty.flights].sort((a, b) => stampOf(a).localeCompare(stampOf(b)));
+    const flights = [...duty.flights].sort(compareFlights);
     const first = flights[0];
     const last = flights[flights.length - 1];
     const startStamp = duty.start ?? (first ? `${first.date}T${first.departure}` : undefined);
@@ -274,7 +287,7 @@ function trackStations(roster: Roster, dates: string[], base: string): Map<strin
   const arrivals = new Map<string, string>();
   const flights = roster.duties
     .flatMap((duty) => duty.flights)
-    .sort((a, b) => stampOf(a).localeCompare(stampOf(b)));
+    .sort(compareFlights);
 
   for (const flight of flights) {
     arrivals.set(flight.arrivalDate ?? flight.date, flight.destination.toUpperCase());
@@ -307,10 +320,6 @@ function groupFlights(roster: Roster): Map<string, RosterFlight[]> {
   }
   for (const flights of byDate.values()) flights.sort((a, b) => a.departure.localeCompare(b.departure));
   return byDate;
-}
-
-function stampOf(flight: RosterFlight): string {
-  return `${flight.date}T${flight.departure}`;
 }
 
 /** Minutes from midnight of `origin` to the moment a "YYYY-MM-DDTHH:MM" stamp names. */

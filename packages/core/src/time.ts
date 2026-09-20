@@ -1,11 +1,7 @@
 /**
- * Time primitives shared by the availability and match engines.
- *
- * Everything here works in "station-local minutes from midnight". A roster prints local times at
- * each station and never a UTC offset, so the whole engine stays in that same frame: two people
- * standing in the same city read the same clock, and a match is only ever computed between two
- * people at one station. Crossing stations would need real zone data, and the engine refuses to
- * match across them instead of pretending.
+ * Local date and interval primitives used for display and same-station intersections.
+ * Cross-station movements are ordered in UTC by roster/location.ts before projecting free
+ * intervals back into the station's local clock. These helpers never compare different zones.
  */
 
 const HHMM_PATTERN = /^([0-1]?\d|2[0-3]):([0-5]\d)$/;

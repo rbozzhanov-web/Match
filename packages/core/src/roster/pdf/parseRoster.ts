@@ -1,3 +1,5 @@
+import { compareFlights } from '../location';
+import { eachDate } from '../../time';
 import type { Roster, RosterDuty, RosterFlight } from '../contract';
 import { dedupeColumns, extractDayColumns } from './grid';
 import { parsePeriod, parseSubject } from './header';
@@ -34,6 +36,7 @@ export function parsePdfRoster(pages: ExtractedPage[], fallbackBase = 'ALA'): Pa
 
   const columns = dedupeColumns(pages.flatMap(extractDayColumns));
   const reading = readGrid(columns, period.start, period.end);
+  if (!reading.dates.length) throw new Error('No readable roster grid found. Nothing was imported.');
   const subject = parseSubject(pages);
   const base = (subject?.base ?? fallbackBase).toUpperCase();
 
@@ -46,9 +49,19 @@ export function parsePdfRoster(pages: ExtractedPage[], fallbackBase = 'ALA'): Pa
       date: sectors[0].date,
       start: duty.start,
       end: duty.end,
-      flights: sectors.map(toFlight),
+      flights: sectors.map(toFlight).sort(compareFlights),
     }];
   }).sort((a, b) => (a.start ?? a.date).localeCompare(b.start ?? b.date));
+
+  // A dropped flight also makes the following blank layover days unverifiable.
+  const uncertainDates = new Set(reading.uncertainDates);
+  for (const date of reading.uncertainDates) {
+    const nextKnown = duties.find(duty => duty.date > date)?.date;
+    for (const affected of eachDate(date, reading.dates.at(-1)!)) {
+      if (nextKnown && affected >= nextKnown) break;
+      uncertainDates.add(affected);
+    }
+  }
 
   // Coverage is what the grid drew, not what the header claimed. A report whose period runs a
   // month while its grid holds a week can only answer for that week; taking the header at its word
@@ -64,6 +77,8 @@ export function parsePdfRoster(pages: ExtractedPage[], fallbackBase = 'ALA'): Pa
     roster: {
       period,
       coverage,
+      coveredDates: reading.dates,
+      uncertainDates: [...uncertainDates],
       duties,
       dayCodes: reading.dayCodes,
       groundDuties: reading.groundDuties,

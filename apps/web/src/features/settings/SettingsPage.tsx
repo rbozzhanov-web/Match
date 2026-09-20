@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { buildTogetherIcs, minutesToHHMM } from '@match/core';
+import { useRef, useState } from 'react';
+import { buildTogetherIcs, minutesToHHMM, remainingMatches, togetherWindows } from '@match/core';
 
 import { useMatch } from '../../app/matchState';
-import { DEFAULT_SETTINGS } from '../../storage/people';
+import { backupText, readBackup, type MatchState, DEFAULT_SETTINGS } from '../../storage/people';
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -19,10 +19,13 @@ interface SettingsPageProps {
  * because two couples would answer them differently and neither answer is the app's to assume.
  */
 export function SettingsPage({ theme, onThemeChange }: SettingsPageProps) {
-  const { settings, updateSettings, windows, them, reset } = useMatch();
+  const { state, settings, updateSettings, days, them, reset, replaceState, canUndo, undo, demo, you, updatePerson } = useMatch();
+  const backupInput = useRef<HTMLInputElement>(null);
+  const [pendingBackup, setPendingBackup] = useState<MatchState>();
   const [notice, setNotice] = useState<string | undefined>(undefined);
 
   const exportCalendar = () => {
+    const windows = togetherWindows(remainingMatches(days, new Date(), settings));
     if (!windows.length) {
       setNotice('Nothing to export yet.');
       return;
@@ -129,6 +132,14 @@ export function SettingsPage({ theme, onThemeChange }: SettingsPageProps) {
       </section>
 
       <section className="panel">
+        <h3 className="section-heading">Individual buffers</h3>
+        <p className="panel__hint">Override the shared settings for travel, preparation and recovery.</p>
+        {([['you', you], ['them', them]] as const).map(([who, person]) => <div key={who}><h4>{person.name}</h4>
+          {(['preDutyBufferMinutes', 'postDutyBufferMinutes'] as const).map(field => <label className="field" key={field}><span>{field === 'preDutyBufferMinutes' ? 'Before report' : 'After release / recovery'}</span><select aria-label={`${person.name} ${field}`} value={person[field] ?? ''} onChange={event => updatePerson(who, { [field]: event.target.value === '' ? undefined : Number(event.target.value) })}>
+          <option value="">Use shared setting</option>{[0, 30, 60, 90, 120, 180, 360, 480, 600, 720].map(minutes => <option key={minutes} value={minutes}>{minutes / 60} h</option>)}</select></label>)}
+        </div>)}
+      </section>
+      <section className="panel">
         <h3 className="section-heading">Calendar</h3>
         <p className="panel__hint">
           Writes every window ahead as all-day events you can open in any calendar app. The times are
@@ -154,6 +165,22 @@ export function SettingsPage({ theme, onThemeChange }: SettingsPageProps) {
         </div>
       </section>
 
+      <section className="panel">
+        <h3 className="section-heading">Backup and recovery</h3>
+        <p className="panel__hint">A backup contains both personal rosters. Keep it somewhere private.</p>
+        <button className="button" disabled={demo} onClick={() => {
+          const href = URL.createObjectURL(new Blob([backupText(state)], { type: 'application/json' }));
+          const link = document.createElement('a'); link.href = href; link.download = 'match-backup.json'; link.click(); setTimeout(() => URL.revokeObjectURL(href), 1000);
+        }}>Export backup</button>
+        <button className="button button--ghost" disabled={demo} onClick={() => backupInput.current?.click()}>Restore backup</button>
+        <input type="file" accept=".json,application/json" className="visually-hidden" ref={backupInput} onChange={async event => {
+          const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+          try { if (file.size > 10_000_000) throw new Error('Backup is too large.'); setPendingBackup(readBackup(await file.text())); }
+          catch (error) { setNotice(error instanceof Error ? error.message : 'Could not read backup.'); }
+        }} />
+        {pendingBackup ? <div className="import-preview"><p>Replace both rosters with the backup for {pendingBackup.you.name} and {pendingBackup.them.name}?</p><button className="button" onClick={() => { replaceState(pendingBackup); setPendingBackup(undefined); setNotice('Backup restored.'); }}>Restore</button><button className="button button--ghost" onClick={() => setPendingBackup(undefined)}>Cancel</button></div> : null}
+        {canUndo ? <button className="button button--ghost" onClick={undo}>Undo last roster change</button> : null}
+      </section>
       <section className="panel">
         <h3 className="section-heading">This device</h3>
         <p className="panel__hint">

@@ -45,6 +45,7 @@ export function buildQuickRoster(input: QuickRosterInput): Roster {
   return {
     period,
     coverage: period,
+    coveredDates: eachDate(input.start, input.end),
     duties: [],
     dayCodes,
     groundDuties,
@@ -78,6 +79,7 @@ export function parseDayCodeText(source: string, base = 'ALA'): Roster | undefin
   return {
     period,
     coverage: period,
+    coveredDates: [...new Set(dates)],
     duties: [],
     dayCodes: entries,
     base,

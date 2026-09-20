@@ -42,6 +42,7 @@ export interface MatchDay {
   caution?: string;
   headline: string;
   reason?: MissReason;
+  sessions?: { station: string; kind: 'home' | 'layover'; overlap: Interval[]; minutes: number }[];
   you: DayAvailability;
   them: DayAvailability;
 }
@@ -131,23 +132,28 @@ export function matchOneDay(
   if (UNAVAILABLE.has(you.state) || UNAVAILABLE.has(them.state)) {
     return miss('no-roster', 'No roster for this day');
   }
-  if (you.station !== them.station) {
-    return miss('different-stations', `${you.station} and ${them.station}`);
-  }
-
-  const kind: 'home' | 'layover' = you.atBase && them.atBase ? 'home' : 'layover';
-  if (kind === 'layover' && !settings.allowLayoverMatches) {
-    return miss('different-stations', `Both down route in ${you.station}`);
-  }
-
+  const yours = you.locations ?? you.free.map(interval => ({ ...interval, station: you.station, atBase: you.atBase }));
+  const theirs = them.locations ?? them.free.map(interval => ({ ...interval, station: them.station, atBase: them.atBase }));
+  const stations = [...new Set(yours.map(slot => slot.station))];
+  const sessions = stations.flatMap(station => {
+    const a = yours.filter(slot => slot.station === station), b = theirs.filter(slot => slot.station === station);
+    const kind: 'home' | 'layover' = a.every(slot => slot.atBase) && b.every(slot => slot.atBase) ? 'home' : 'layover';
+    if (!b.length || (kind === 'layover' && !settings.allowLayoverMatches)) return [];
+    const overlap = intersectIntervals(a, b);
+    const minutes = totalMinutes(overlap);
+    return minutes ? [{ station, kind, overlap, minutes }] : [];
+  }).sort((a, b) => b.minutes - a.minutes);
+  if (!sessions.length && you.station !== them.station) return miss('different-stations', `${you.station} and ${them.station}`);
+  const primary = sessions[0];
+  const kind = primary?.kind ?? (you.atBase && them.atBase ? 'home' : 'layover');
   const standby = you.state === 'standby' || them.state === 'standby';
   if (standby && !settings.includeStandby) {
     return miss('both-working', 'On standby');
   }
 
-  const overlap = intersectIntervals(you.free, them.free);
-  const minutes = totalMinutes(overlap);
-  if (!minutes) return miss('both-working', 'Both on duty');
+  const overlap = primary?.overlap ?? [];
+  const minutes = sessions.reduce((sum, session) => sum + session.minutes, 0);
+  if (!minutes) return miss('both-working', !settings.allowLayoverMatches && kind === 'layover' ? 'Shared layovers are excluded' : 'No shared free time');
   if (minutes < settings.minimumMinutes) {
     return { ...miss('too-short', `Only ${formatShort(minutes)} together`), overlap, minutes };
   }
@@ -160,7 +166,8 @@ export function matchOneDay(
   return {
     date: you.date,
     matched: true,
-    station: you.station,
+    station: primary?.station,
+    sessions,
     kind,
     overlap,
     minutes,
@@ -168,7 +175,7 @@ export function matchOneDay(
     quality,
     tentative: standby,
     caution: sick ? 'One of you is on sick leave' : undefined,
-    headline: headlineFor(quality, longest, kind, you.station),
+    headline: sessions.length > 1 ? sessions.map(s => `${s.station} · ${formatShort(s.minutes)}`).join(' / ') : headlineFor(quality, longest, kind, primary?.station ?? you.station),
     you,
     them,
   };
@@ -196,7 +203,7 @@ export function nextMatch(days: MatchDay[], from: string): MatchDay | undefined 
 function sociableSpan(you: DayAvailability, them: DayAvailability): number {
   // Both sides are built from the same sociable window, so either one gives its length; the free
   // intervals alone would not, since duty has already been cut out of them.
-  const span = Math.max(spanOf(you), spanOf(them));
+  const span = Math.max(you.sociableMinutes ?? spanOf(you), them.sociableMinutes ?? spanOf(them));
   return span || 15 * 60;
 }
 

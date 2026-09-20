@@ -20,6 +20,7 @@ export {
 
 export {
   rosterCoverage,
+  rosterDates,
   type CrewRole,
   type Person,
   type Roster,
@@ -84,3 +85,7 @@ export { extractDayColumns, dedupeColumns, resolveGridDate, type DayColumn } fro
 export { readGrid, type GridReading } from './roster/pdf/readGrid';
 export { tokenizeLines, type Line } from './roster/pdf/tokenize';
 export { parsePeriod, parseSubject, type ReportPeriod, type ReportSubject } from './roster/pdf/header';
+
+export { stationClock, stationInstant, stationZone, normalizeStation, type LocatedInterval } from './roster/location';
+
+export { remainingMatches } from './match/upcoming';

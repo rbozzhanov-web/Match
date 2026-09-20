@@ -43,7 +43,7 @@ function buildWindowEvent(window: TogetherWindow, options: IcsOptions): string[]
     window.commonHours
       ? `Free together every day ${minutesToHHMM(window.commonHours.start)}–${minutesToHHMM(window.commonHours.end)}.`
       : '',
-  ].filter(Boolean).join('\\n');
+  ].filter(Boolean).join('\n');
 
   return [
     'BEGIN:VEVENT',
@@ -75,7 +75,7 @@ function utcStamp(date: Date): string {
 function escapeIcs(value: string): string {
   return value
     .replaceAll('\\', '\\\\')
-    .replaceAll(';', '\;')
+    .replaceAll(';', '\\;')
     .replaceAll(',', '\\,')
     .replace(/\r?\n/g, '\\n');
 }

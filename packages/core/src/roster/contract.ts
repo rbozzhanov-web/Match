@@ -1,3 +1,5 @@
+import { eachDate } from '../time';
+
 /**
  * The roster shape the match engine reads.
  *
@@ -75,6 +77,10 @@ export interface Roster {
    * unknown rather than free, and guessing "free" there would invent time together.
    */
   coverage?: { start: string; end: string };
+  /** Exact imported dates; gaps are never inferred to be free. */
+  coveredDates?: string[];
+  uncertainDates?: string[];
+  source?: 'sample' | 'import';
   duties: RosterDuty[];
   dayCodes?: RosterDayCode[];
   groundDuties?: RosterGroundDuty[];
@@ -89,8 +95,15 @@ export interface Person {
   name: string;
   base: string;
   roster?: Roster;
+  preDutyBufferMinutes?: number;
+  postDutyBufferMinutes?: number;
 }
 
 export function rosterCoverage(roster: Roster): { start: string; end: string } {
   return roster.coverage ?? roster.period;
+}
+
+export function rosterDates(roster: Roster): string[] {
+  const coverage = rosterCoverage(roster);
+  return roster.coveredDates ?? eachDate(coverage.start, coverage.end);
 }
