@@ -13,7 +13,7 @@ type ThemePreference = 'system' | 'light' | 'dark';
 const THEME_KEY = 'match.theme-preference.v1';
 
 const items = [
-  { to: '/', title: 'Together', label: 'Together', icon: '❥', end: true },
+  { to: '/', title: 'Together', label: 'Together', icon: '♥', end: true },
   { to: '/calendar', title: 'Calendar', label: 'Calendar', icon: '▦' },
   { to: '/people', title: 'Rosters', label: 'Rosters', icon: '✈' },
   { to: '/more', title: 'More', label: 'More', icon: '•••' },
@@ -140,7 +140,6 @@ export function AppFrame() {
 
   return (
     <div className={`app-frame${usesDarkTheme ? ' app-frame--dark' : ''}`}>
-      <div className="app-wallpaper" aria-hidden="true" />
       <header className="primary-tab-header">
         <h1 className="primary-tab-header__accessible-title">{items[visualIndex].title}</h1>
         <div aria-hidden="true" className="primary-tab-header__titles">

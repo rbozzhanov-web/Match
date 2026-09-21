@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 import { MatchProvider } from '../matchState';
 import { TogetherPage } from '../../features/together/TogetherPage';
@@ -24,9 +25,9 @@ function stateWith(yourFree: string[], theirFree: string[], start: string, end: 
 
 function renderTogether(state: MatchState) {
   return render(
-    <MatchProvider initialState={state}>
+    <MemoryRouter><MatchProvider initialState={state}>
       <TogetherPage />
-    </MatchProvider>,
+    </MatchProvider></MemoryRouter>,
   );
 }
 
@@ -37,8 +38,8 @@ describe('the page that answers the question', () => {
       them: { id: 'them', name: 'Khava', base: 'ALA' },
       settings: { ...DEFAULT_SETTINGS },
     });
-    expect(screen.getByRole('heading', { name: 'Two rosters, one answer' })).toBeInTheDocument();
-    expect(screen.getByText(/Add a roster for Ramil and for Khava/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Find your time together' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add rosters' })).toHaveAttribute('href', '/people');
   });
 
   it('names the next stretch of days together', () => {

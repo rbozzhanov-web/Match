@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   DEFAULT_MOVE_IN_DATE,
   formatDuration,
@@ -9,6 +10,7 @@ import {
 } from '@match/core';
 
 import { useNow } from '../useNow';
+import { sampleRosters } from '../../roster/sample';
 import { useMatch } from '../../app/matchState';
 import { formatCountdown, formatDate, formatInterval, formatRange, today } from '../format';
 
@@ -20,7 +22,7 @@ import { formatCountdown, formatDate, formatInterval, formatRange, today } from 
  * to ask why a particular day is missing.
  */
 export function TogetherPage() {
-  const { days, settings, you, them, hasBothRosters, yourDays, theirDays } = useMatch();
+  const { days, settings, you, them, hasBothRosters, yourDays, theirDays, startDemo } = useMatch();
   const clock = useNow();
   const now = today();
   const remaining = useMemo(() => remainingMatches(days, clock, settings), [days, clock, settings]);
@@ -38,14 +40,18 @@ export function TogetherPage() {
   if (!hasBothRosters) {
     return (
       <div className="page">
-        <section className="empty-state">
-          <p className="empty-state__mark" aria-hidden="true">❥</p>
-          <h2>Two rosters, one answer</h2>
-          <p>
-            Add a roster for {you.name} and for {them.name}, and this page fills with the days you can
-            be together — at home, or down route in the same city.
-          </p>
-          <p className="empty-state__hint">Open the Rosters tab to import, or load the sample month to see how it reads.</p>
+        <section className="empty-state welcome-card" aria-labelledby="welcome-title">
+          <svg className="welcome-card__heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-9-5.7-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.3-9 12-9 12Z" /></svg>
+          <h2 id="welcome-title">Find your time together</h2>
+          <p>Add both rosters to see when you can be together, at home or on a shared layover.</p>
+          <div className="welcome-card__actions">
+            <Link className="button" to="/people">Add rosters</Link>
+            <button className="button button--ghost" type="button" onClick={() => {
+              const sample = sampleRosters(`${now.slice(0, 7)}-01`);
+              startDemo(sample.you, sample.them);
+            }}>Try a sample month</button>
+          </div>
+          <p className="empty-state__hint">Your rosters stay on this device.</p>
         </section>
       </div>
     );

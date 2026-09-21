@@ -2,11 +2,27 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #root { height: 100%; }
+/* Only the pager and its pages scroll. The document must never become a
+   second vertical scroller when a gesture reaches a page boundary. */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+#root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html { background-color: var(--surface); }
 
 body {
   margin: 0;
-  background: var(--surface);
+  background: transparent;
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 16px;
@@ -32,24 +48,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ---------------------------------------------------------------- app shell */
 
 .app-frame {
+  --inset-left: max(var(--page-gutter), env(safe-area-inset-left));
+  --inset-right: max(var(--page-gutter), env(safe-area-inset-right));
+  --dock-bottom: max(10px, env(safe-area-inset-bottom));
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
-.app-wallpaper {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(90% 60% at 12% 0%, var(--accent-soft), transparent 70%),
-    radial-gradient(70% 50% at 100% 8%, var(--state-leave-soft), transparent 72%);
-  opacity: .85;
-}
-
 .primary-tab-header {
+  touch-action: none;
   position: relative;
   z-index: 1;
   flex: none;
@@ -77,13 +88,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .primary-tab-header__titles > span.is-visible { opacity: 1; }
 
-.app-frame__content { position: relative; z-index: 1; flex: 1; min-height: 0; }
+.app-frame__content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: calc(var(--dock-height) + var(--dock-bottom) + 12px);
+}
 
 .primary-tab-pager {
   display: flex;
   height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior: none;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -93,8 +111,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .primary-tab-pager__page {
   flex: 0 0 100%;
+  min-width: 0;
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior-y: none;
   scroll-snap-align: start;
   -webkit-overflow-scrolling: touch;
 }
@@ -103,22 +123,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 8px var(--page-gutter) calc(var(--dock-height) + env(safe-area-inset-bottom) + 24px);
+  padding: 8px var(--inset-right) 24px var(--inset-left);
 }
 
 /* ------------------------------------------------------------------- tab dock */
 
 .tab-dock {
-  position: relative;
-  z-index: 2;
-  flex: none;
+  touch-action: none;
+  position: absolute;
+  z-index: 3;
+  right: var(--inset-right);
+  bottom: var(--dock-bottom);
+  left: var(--inset-left);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  height: calc(var(--dock-height) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
-  backdrop-filter: blur(18px);
+  height: var(--dock-height);
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / .58);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  backdrop-filter: blur(24px) saturate(145%);
   box-shadow: var(--shadow-dock);
 }
 
@@ -126,13 +151,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
    instead of jumping when the URL finally changes. */
 .tab-dock__indicator {
   position: absolute;
-  top: 6px;
+  pointer-events: none;
+  top: 7px;
   left: 0;
   width: 25%;
-  height: 34px;
-  border-radius: var(--radius);
+  height: 40px;
+  border-radius: 19px;
   background: var(--accent-soft);
-  transform: translateX(calc(var(--tab-progress, 0) * 100%));
+  transform: translateX(calc(var(--tab-progress, 0) * 100%)) scaleX(.9);
   transition: background .2s ease;
 }
 
@@ -142,7 +168,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 0;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 0;
+  padding: 9px 0 7px;
   font-size: 11px;
   font-weight: 560;
   color: var(--ink-faint);
@@ -293,6 +322,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .empty-state__mark { font-size: 40px; color: var(--accent); }
 .empty-state h2 { font-size: 20px; color: var(--ink); }
 .empty-state__hint { font-size: 13px; color: var(--ink-faint); }
+
+.welcome-card {
+  margin-top: 8px;
+  padding: 28px 22px;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+}
+.welcome-card__heart { width: 44px; height: 44px; color: var(--accent); }
+.welcome-card h2 { font-size: clamp(22px, 6vw, 27px); line-height: 1.2; text-wrap: balance; }
+.welcome-card > p { max-width: 32ch; }
+.welcome-card__actions { display: grid; gap: 10px; width: 100%; margin-top: 4px; }
+.welcome-card__actions .button { display: flex; align-items: center; justify-content: center; text-decoration: none; min-height: 48px; }
+.welcome-card .empty-state__hint { color: var(--ink-soft); }
 
 /* ------------------------------------------------------------- next window */
 
@@ -492,44 +538,44 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* A single quiet atmosphere sits behind every screen, including both safe areas.
    Components are deliberately translucent so the wallpaper reads as one layer. */
-body {
+html {
   background:
+    radial-gradient(38% 28% at 12% 14%, rgb(255 255 255 / .7), transparent 100%),
+    radial-gradient(46% 32% at 93% 29%, rgb(255 242 215 / .52), transparent 100%),
+    radial-gradient(55% 34% at 42% 94%, rgb(197 224 245 / .5), transparent 100%),
     radial-gradient(100% 55% at 12% -8%, rgb(255 214 225 / .9), transparent 66%),
     radial-gradient(78% 46% at 100% 7%, rgb(171 224 245 / .86), transparent 69%),
     linear-gradient(155deg, #f7f9fc 0%, #eaf2f8 53%, #f7eff4 100%);
 }
 
-:root.theme-dark body {
+:root.theme-dark {
   background:
+    radial-gradient(45% 30% at 14% 12%, rgb(255 164 195 / .15), transparent 100%),
+    radial-gradient(54% 36% at 100% 26%, rgb(109 212 247 / .12), transparent 100%),
+    radial-gradient(52% 42% at 54% 100%, rgb(255 188 144 / .09), transparent 100%),
     radial-gradient(95% 48% at 8% -8%, rgb(131 63 94 / .6), transparent 68%),
     radial-gradient(70% 45% at 100% 0%, rgb(29 99 128 / .62), transparent 69%),
     linear-gradient(155deg, #11192a 0%, #101827 50%, #221521 100%);
 }
 
-.app-wallpaper {
-  position: fixed;
-  background:
-    radial-gradient(38% 28% at 12% 14%, rgb(255 255 255 / .7), transparent 100%),
-    radial-gradient(46% 32% at 93% 29%, rgb(255 242 215 / .52), transparent 100%),
-    radial-gradient(55% 34% at 42% 94%, rgb(197 224 245 / .5), transparent 100%);
-  opacity: 1;
-}
-
-:root.theme-dark .app-wallpaper {
-  background:
-    radial-gradient(45% 30% at 14% 12%, rgb(255 164 195 / .15), transparent 100%),
-    radial-gradient(54% 36% at 100% 26%, rgb(109 212 247 / .12), transparent 100%),
-    radial-gradient(52% 42% at 54% 100%, rgb(255 188 144 / .09), transparent 100%);
+/* The document canvas owns the complete wallpaper, including the area outside
+   WebKit's content box. Never restart the gradient on body or a fixed overlay. */
+html, :root.theme-dark {
+  background-attachment: fixed;
+  background-size: 100% 100lvh;
+  background-repeat: no-repeat;
 }
 
 .primary-tab-header {
-  min-height: calc(64px + env(safe-area-inset-top));
-  padding: max(12px, env(safe-area-inset-top)) var(--page-gutter) 10px;
+  min-height: calc(66px + env(safe-area-inset-top));
+  padding: calc(env(safe-area-inset-top) + 12px) var(--inset-right) 11px var(--inset-left);
   background: linear-gradient(to bottom, rgb(255 255 255 / .42), transparent);
   backdrop-filter: blur(18px) saturate(130%);
 }
 
 :root.theme-dark .primary-tab-header { background: linear-gradient(to bottom, rgb(9 15 27 / .34), transparent); }
+:root.theme-dark .tab-dock { border-color: rgb(205 225 255 / .2); }
+:root.theme-dark .tab-dock::before { opacity: .38; }
 
 .primary-tab-header__titles { margin-top: 1px; }
 .primary-tab-header__titles > span { font-size: 30px; font-weight: 720; letter-spacing: -.035em; }
@@ -538,7 +584,7 @@ body {
 
 .tab-dock {
   background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
-  border-top: 1px solid rgb(255 255 255 / .48);
+  border-color: rgb(255 255 255 / .54);
   backdrop-filter: blur(28px) saturate(150%);
 }
 
@@ -547,18 +593,19 @@ body {
   position: absolute;
   inset: 0 0 auto;
   height: 1px;
+  border-radius: inherit;
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / .92), transparent);
 }
 
 .tab-dock__indicator {
-  top: 5px;
-  height: 38px;
+  top: 7px;
+  height: calc(100% - 14px);
   border: 1px solid rgb(255 255 255 / .56);
   background: color-mix(in srgb, var(--accent-soft) 84%, transparent);
   box-shadow: 0 1px 0 rgb(255 255 255 / .7) inset, 0 6px 14px rgb(150 68 101 / .11);
 }
 
-.tab-dock__item { padding-top: 7px; font-size: 10px; letter-spacing: .01em; }
+.tab-dock__item { padding: 6px 0; font-size: 11px; letter-spacing: .01em; }
 .tab-dock__item > span:first-child { font-size: 16px; }
 
 .panel, .summary-tile, .window-card, .day-detail__card {
@@ -732,4 +779,35 @@ body {
   .next-window { padding: 22px; }
   .summary-tile { padding-inline: 5px; }
   .window-card__header { align-items: flex-start; flex-direction: column; gap: 5px; }
+}
+
+@media (max-height: 700px) {
+  .primary-tab-header { min-height: calc(58px + env(safe-area-inset-top)); padding-bottom: 7px; }
+  .page { padding-top: 8px; gap: 12px; }
+  .app-frame { --dock-bottom: max(7px, env(safe-area-inset-bottom)); }
+}
+
+/* Keep controls readable and comfortably tappable without affecting roster logic. */
+.button, .segmented__option { min-height: 44px; }
+.month-switch button { width: 44px; height: 44px; flex-shrink: 0; }
+.field select, .field input:not([type='checkbox']), .panel__paste textarea { font-size: 16px; }
+.field > span { min-width: 0; overflow-wrap: anywhere; }
+.field select { flex-shrink: 0; }
+.summary-tile__label { font-size: 11px; letter-spacing: .02em; }
+.next-window__facts span { font-size: 11px; opacity: .9; }
+.next-window__facts p { overflow-wrap: anywhere; }
+.window-card__header { flex-wrap: wrap; }
+.window-card__day-detail { overflow-wrap: anywhere; }
+.tab-dock__item { color: var(--ink-soft); }
+.tab-dock__item--active { color: var(--accent-strong); }
+:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 3px; }
+:root.theme-dark .tab-dock__indicator {
+  border-color: rgb(255 255 255 / .16);
+  box-shadow: 0 1px 0 rgb(255 255 255 / .12) inset;
+}
+:root.theme-dark .calendar-cell--matched {
+  background: var(--accent-soft);
+}
+:root.theme-dark .calendar-cell--selected {
+  background: var(--accent);
 }
