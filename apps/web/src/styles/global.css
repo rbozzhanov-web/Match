@@ -32,6 +32,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ---------------------------------------------------------------- app shell */
 
 .app-frame {
+  --inset-left: max(var(--page-gutter), env(safe-area-inset-left));
+  --inset-right: max(var(--page-gutter), env(safe-area-inset-right));
+  --dock-bottom: max(10px, env(safe-area-inset-bottom));
   position: relative;
   display: flex;
   flex-direction: column;
@@ -78,7 +81,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .primary-tab-header__titles > span.is-visible { opacity: 1; }
 
-.app-frame__content { position: relative; z-index: 1; flex: 1; min-height: 0; }
+.app-frame__content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: calc(var(--dock-height) + var(--dock-bottom) + 12px);
+}
 
 .primary-tab-pager {
   display: flex;
@@ -94,6 +103,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .primary-tab-pager__page {
   flex: 0 0 100%;
+  min-width: 0;
   height: 100%;
   overflow-y: auto;
   scroll-snap-align: start;
@@ -104,7 +114,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 8px var(--page-gutter) calc(var(--dock-height) + env(safe-area-inset-bottom) + 44px);
+  padding: 8px var(--inset-right) 24px var(--inset-left);
 }
 
 /* ------------------------------------------------------------------- tab dock */
@@ -112,9 +122,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tab-dock {
   position: absolute;
   z-index: 3;
-  right: var(--page-gutter);
-  bottom: max(10px, env(safe-area-inset-bottom));
-  left: var(--page-gutter);
+  right: var(--inset-right);
+  bottom: var(--dock-bottom);
+  left: var(--inset-left);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
@@ -130,13 +140,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Rides the pager's scroll position rather than the active route, so it tracks a drag continuously
    instead of jumping when the URL finally changes. */
 .tab-dock__indicator {
+  position: absolute;
+  pointer-events: none;
   top: 7px;
   left: 0;
   width: 25%;
   height: 40px;
   border-radius: 19px;
   background: var(--accent-soft);
-  transform: translateX(calc(var(--tab-progress, 0) * 100%));
+  transform: translateX(calc(var(--tab-progress, 0) * 100%)) scaleX(.9);
   transition: background .2s ease;
 }
 
@@ -146,6 +158,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 0;
   padding: 9px 0 7px;
   font-size: 11px;
   font-weight: 560;
@@ -528,7 +543,7 @@ body {
 
 .primary-tab-header {
   min-height: calc(66px + env(safe-area-inset-top));
-  padding: max(13px, env(safe-area-inset-top)) var(--page-gutter) 11px;
+  padding: calc(env(safe-area-inset-top) + 12px) var(--inset-right) 11px var(--inset-left);
   background: linear-gradient(to bottom, rgb(255 255 255 / .42), transparent);
   backdrop-filter: blur(18px) saturate(130%);
 }
@@ -559,13 +574,13 @@ body {
 
 .tab-dock__indicator {
   top: 7px;
-  height: 40px;
+  height: calc(100% - 14px);
   border: 1px solid rgb(255 255 255 / .56);
   background: color-mix(in srgb, var(--accent-soft) 84%, transparent);
   box-shadow: 0 1px 0 rgb(255 255 255 / .7) inset, 0 6px 14px rgb(150 68 101 / .11);
 }
 
-.tab-dock__item { padding-top: 9px; font-size: 10px; letter-spacing: .01em; }
+.tab-dock__item { padding: 6px 0; font-size: 11px; letter-spacing: .01em; }
 .tab-dock__item > span:first-child { font-size: 16px; }
 
 .panel, .summary-tile, .window-card, .day-detail__card {
@@ -744,5 +759,30 @@ body {
 @media (max-height: 700px) {
   .primary-tab-header { min-height: calc(58px + env(safe-area-inset-top)); padding-bottom: 7px; }
   .page { padding-top: 8px; gap: 12px; }
-  .tab-dock { bottom: max(7px, env(safe-area-inset-bottom)); }
+  .app-frame { --dock-bottom: max(7px, env(safe-area-inset-bottom)); }
+}
+
+/* Keep controls readable and comfortably tappable without affecting roster logic. */
+.button, .segmented__option { min-height: 44px; }
+.month-switch button { width: 44px; height: 44px; flex-shrink: 0; }
+.field select, .field input:not([type='checkbox']), .panel__paste textarea { font-size: 16px; }
+.field > span { min-width: 0; overflow-wrap: anywhere; }
+.field select { flex-shrink: 0; }
+.summary-tile__label { font-size: 11px; letter-spacing: .02em; }
+.next-window__facts span { font-size: 11px; opacity: .9; }
+.next-window__facts p { overflow-wrap: anywhere; }
+.window-card__header { flex-wrap: wrap; }
+.window-card__day-detail { overflow-wrap: anywhere; }
+.tab-dock__item { color: var(--ink-soft); }
+.tab-dock__item--active { color: var(--accent-strong); }
+:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 3px; }
+:root.theme-dark .tab-dock__indicator {
+  border-color: rgb(255 255 255 / .16);
+  box-shadow: 0 1px 0 rgb(255 255 255 / .12) inset;
+}
+:root.theme-dark .calendar-cell--matched {
+  background: var(--accent-soft);
+}
+:root.theme-dark .calendar-cell--selected {
+  background: var(--accent);
 }
