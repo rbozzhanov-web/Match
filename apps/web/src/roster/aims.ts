@@ -1,5 +1,5 @@
 import type { Roster, RosterDayCode, RosterDuty, RosterFlight, RosterGroundDuty } from '@match/core';
-import { isNonDutyCode } from '@match/core';
+import { isNonDutyCode, rosterDates, stationInstant, eachDate } from '@match/core';
 
 /**
  * Reads an AIMS Crew Schedule saved from the browser.
@@ -82,6 +82,7 @@ export async function parseAimsArchive(file: File, base = 'ALA'): Promise<Roster
   return {
     period,
     coverage: period,
+    coveredDates: eachDate(period.start, period.end),
     duties,
     dayCodes: dedupe(dayCodes, (entry) => entry.date),
     groundDuties,
@@ -98,26 +99,23 @@ export async function parseAimsArchive(file: File, base = 'ALA'): Promise<Roster
  * replaced by the latest month.
  */
 export function mergeRoster(existing: Roster | undefined, incoming: Roster): Roster {
-  if (!existing) return incoming;
-  const duties = dedupe(
-    [...existing.duties, ...incoming.duties],
-    (duty) => `${duty.date}|${duty.flights.map((flight) => flight.flightNumber).join(',')}`,
-  ).sort((a, b) => a.date.localeCompare(b.date));
-
+  if (!existing || existing.source === 'sample') return incoming;
+  const replaced = new Set(rosterDates(incoming));
+  const coveredDates = [...new Set([...rosterDates(existing), ...replaced])].sort();
+  // A new snapshot owns every record on its explicitly covered dates, including cancellations.
   return {
-    period: incoming.period,
-    coverage: {
-      start: min(existing.coverage?.start ?? existing.period.start, incoming.coverage?.start ?? incoming.period.start),
-      end: max(existing.coverage?.end ?? existing.period.end, incoming.coverage?.end ?? incoming.period.end),
-    },
-    duties,
-    dayCodes: dedupe([...(incoming.dayCodes ?? []), ...(existing.dayCodes ?? [])], (entry) => entry.date),
-    groundDuties: dedupe(
-      [...(existing.groundDuties ?? []), ...(incoming.groundDuties ?? [])],
-      (entry) => `${entry.date}|${entry.code}|${entry.start ?? ''}`,
-    ),
+    ...incoming,
+    coveredDates,
+    coverage: { start: coveredDates[0], end: coveredDates[coveredDates.length - 1] },
+    uncertainDates: [...new Set([
+      ...(existing.uncertainDates ?? []).filter(date => !replaced.has(date)),
+      ...(incoming.uncertainDates ?? []),
+    ])],
+    duties: [...existing.duties.filter(duty => !replaced.has(duty.date)), ...incoming.duties]
+      .sort((a, b) => a.date.localeCompare(b.date)),
+    dayCodes: [...(existing.dayCodes ?? []).filter(entry => !replaced.has(entry.date)), ...(incoming.dayCodes ?? [])],
+    groundDuties: [...(existing.groundDuties ?? []).filter(entry => !replaced.has(entry.date)), ...(incoming.groundDuties ?? [])],
     base: incoming.base ?? existing.base,
-    importedAt: incoming.importedAt,
   };
 }
 
@@ -126,6 +124,7 @@ function sectors(event: RecordValue, dutyDate: string): RosterFlight[] {
   const dutyStartClock = clock(boundary(text(event.report), dutyDate)) ?? clock(boundary(text(event.start), dutyDate));
   let rollingDate = dutyDate;
   let previousDeparture: string | undefined;
+  let previousArrivalInstant: number | undefined;
   const details = sectorDetails(event);
   SECTOR_PATTERN.lastIndex = 0;
 
@@ -137,13 +136,19 @@ function sectors(event: RecordValue, dutyDate: string): RosterFlight[] {
     // A sector whose printed departure runs backwards against the one before it has crossed
     // midnight without AIMS saying so.
     if (outNext) rollingDate = addDays(dutyDate, 1);
-    else if (previousDeparture ? departure < previousDeparture : Boolean(dutyStartClock && departure < dutyStartClock)) {
+    else if (previousDeparture ? (
+      previousArrivalInstant !== undefined && stationInstant(rollingDate, Number(out.slice(0, 2)) * 60 + Number(out.slice(2)), origin) !== undefined
+        ? stationInstant(rollingDate, Number(out.slice(0, 2)) * 60 + Number(out.slice(2)), origin)! < previousArrivalInstant
+        : departure < previousDeparture
+    ) : Boolean(dutyStartClock && departure < dutyStartClock)) {
       rollingDate = addDays(rollingDate, 1);
     }
     const date = rollingDate;
     let arrivalDate = inNext ? addDays(dutyDate, 1) : date;
     if (arrivalDate < date) arrivalDate = date;
-    if (arrivalDate === date && arrival < departure) arrivalDate = addDays(date, 1);
+    const outInstant = stationInstant(date, Number(out.slice(0, 2)) * 60 + Number(out.slice(2)), origin);
+    const inInstant = stationInstant(arrivalDate, Number(incoming.slice(0, 2)) * 60 + Number(incoming.slice(2)), destination);
+    if (arrivalDate === date && (outInstant !== undefined && inInstant !== undefined ? inInstant <= outInstant : arrival < departure)) arrivalDate = addDays(date, 1);
 
     parsed.push({
       flightNumber: /^KC/i.test(flightNumber) ? flightNumber.toUpperCase() : `KC${flightNumber}`,
@@ -156,6 +161,7 @@ function sectors(event: RecordValue, dutyDate: string): RosterFlight[] {
       deadhead: Boolean(event.IsDeadhead),
     });
     previousDeparture = departure;
+    previousArrivalInstant = stationInstant(arrivalDate, Number(incoming.slice(0, 2)) * 60 + Number(incoming.slice(2)), destination);
   }
   return parsed;
 }
@@ -257,8 +263,6 @@ function dedupe<T>(items: T[], key: (item: T) => string): T[] {
   });
 }
 
-function min(a: string, b: string) { return a < b ? a : b; }
-function max(a: string, b: string) { return a > b ? a : b; }
 function text(value: unknown) { return typeof value === 'string' ? value : ''; }
 function record(value: unknown): value is RecordValue {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);

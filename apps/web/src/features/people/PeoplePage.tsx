@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
-import { addDays, rosterCoverage, type Roster } from '@match/core';
+import { useEffect, useRef, useState } from 'react';
+import { addDays, rosterCoverage, rosterDates, stationZone, type Roster } from '@match/core';
 
 import { useMatch } from '../../app/matchState';
 import { importRosterFile, mergeRoster } from '../../roster/importRoster';
 import { parseDayCodeText, weekendsOff } from '../../roster/quickRoster';
 import { sampleRosters } from '../../roster/sample';
+import { validRoster } from '../../storage/people';
 import { formatDate, today } from '../format';
 
 /**
@@ -16,27 +17,30 @@ import { formatDate, today } from '../format';
  * answer is worth.
  */
 export function PeoplePage() {
-  const { you, them, importRoster, removeRoster, renamePerson } = useMatch();
+  const { you, them, importRoster, removeRoster, renamePerson, startDemo, endDemo, demo, canUndo, undo, updatePerson } = useMatch();
   const [notice, setNotice] = useState<string | undefined>(undefined);
+  useEffect(() => { if (!demo) setNotice(undefined); }, [demo]);
 
   const loadSample = () => {
     const start = `${today().slice(0, 7)}-01`;
     const { you: yours, them: theirs } = sampleRosters(start);
-    importRoster('you', yours);
-    importRoster('them', theirs);
-    setNotice('Loaded an invented month for both of you. Importing a real roster replaces it.');
+    startDemo(yours, theirs);
+    setNotice(undefined);
   };
 
   return (
     <div className="page">
       {notice ? <p className="notice" role="status">{notice}</p> : null}
 
+      {canUndo ? <button className="button button--ghost" onClick={() => { undo(); setNotice('Last roster change undone.'); }}>Undo last roster change</button> : null}
+      <fieldset disabled={demo} className="roster-fields">
       <PersonPanel
         onImport={(roster) => importRoster('you', roster)}
         onRemove={() => removeRoster('you')}
         onRename={(name) => renamePerson('you', name)}
         onNotice={setNotice}
         person={you}
+        onBase={(base) => updatePerson('you', { base, roster: you.roster ? { ...you.roster, base } : undefined })}
         who="you"
       />
       <PersonPanel
@@ -45,16 +49,18 @@ export function PeoplePage() {
         onRename={(name) => renamePerson('them', name)}
         onNotice={setNotice}
         person={them}
+        onBase={(base) => updatePerson('them', { base, roster: them.roster ? { ...them.roster, base } : undefined })}
         who="them"
       />
 
+      </fieldset>
       <section className="panel">
         <h3 className="section-heading">Just looking</h3>
         <p className="panel__hint">
           Load an invented month for both people to see how the app reads a pair of rosters. Nothing
           about it is real, and importing over it is the only thing it is for.
         </p>
-        <button className="button button--ghost" onClick={loadSample} type="button">Load a sample month</button>
+        <button className="button button--ghost" onClick={demo ? endDemo : loadSample} type="button">{demo ? 'Exit demo' : 'Load a sample month'}</button>
       </section>
     </div>
   );
@@ -65,32 +71,31 @@ interface PersonPanelProps {
   who: 'you' | 'them';
   onImport: (roster: Roster) => void;
   onRemove: () => void;
+  onBase: (base: string) => void;
   onRename: (name: string) => void;
   onNotice: (message: string | undefined) => void;
 }
 
-function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: PersonPanelProps) {
+function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice, onBase }: PersonPanelProps) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [paste, setPaste] = useState('');
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<{ roster: Roster; label: string; unread: number }>();
+  const [baseInput, setBaseInput] = useState(person.base);
+  useEffect(() => setBaseInput(person.base), [person.base]);
+  const stage = (roster: Roster, label: string, unread = 0) => {
+    if (!validRoster(roster)) throw new Error('The roster contains invalid dates or times. Nothing was imported.');
+    setPending({ roster, label, unread });
+  };
   const [error, setError] = useState<string | undefined>(undefined);
 
   const readRosterFile = async (file: File) => {
     setBusy(true);
+    setPending(undefined);
     setError(undefined);
     try {
       const imported = await importRosterFile(file, person.base);
-      // Merging rather than replacing: two people comparing months import several files each, and
-      // a match only reaches as far as the narrower roster's coverage.
-      onImport(mergeRoster(person.roster, imported.roster));
-      const days = imported.roster.dayCodes?.length ?? 0;
-      const kind = imported.source === 'pdf' ? 'PDF' : 'AIMS archive';
-      onNotice(
-        `Read ${imported.roster.duties.length} duties and ${days} rostered days off for ${person.name} from the ${kind}.`
-        // A roster the reader only partly understood is worth saying out loud: the days it did
-        // read are still usable, and silence here would look like a clean import.
-        + (imported.unreadCells.length ? ` ${imported.unreadCells.length} cells were not recognised.` : ''),
-      );
+      stage(imported.roster, imported.subjectName ?? file.name, imported.unreadCells.length);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not read that file.');
     } finally {
@@ -106,15 +111,13 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
       return;
     }
     setError(undefined);
-    onImport(mergeRoster(person.roster, parsed));
-    onNotice(`Read ${parsed.dayCodes?.length ?? 0} days for ${person.name}.`);
-    setPaste('');
+    try { stage(parsed, 'Typed days'); setPaste(''); }
+    catch (error) { setError(error instanceof Error ? error.message : 'Invalid dates.'); }
   };
 
   const addWorkingWeeks = () => {
     const start = today();
-    onImport(mergeRoster(person.roster, weekendsOff(start, addDays(start, 55), person.base)));
-    onNotice(`Gave ${person.name} eight weeks of weekends off.`);
+    stage(weekendsOff(start, addDays(start, 55), person.base), 'Eight working weeks');
   };
 
   const coverage = person.roster ? rosterCoverage(person.roster) : undefined;
@@ -133,9 +136,21 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
         <span className="panel__base">{person.base}</span>
       </header>
 
+      <label className="field"><span>Home base (IATA)</span><input aria-label={`Home base for ${person.name}`} value={baseInput} maxLength={3} onChange={event => setBaseInput(event.target.value.toUpperCase())} onBlur={() => {
+        if (stationZone(baseInput)) { if (baseInput !== person.base) onBase(baseInput); setError(undefined); }
+        else { setError('Choose a supported airport code, for example ALA or NQZ.'); setBaseInput(person.base); }
+      }} /></label>
+      {pending ? <section className="import-preview" aria-label={`Import preview for ${person.name}`}>
+        <h3>Review import</h3><p>{pending.label} · {pending.roster.base ?? person.base}</p>
+        <p>{formatDate(pending.roster.period.start)} – {formatDate(pending.roster.period.end)}</p>
+        <p>{rosterDates(pending.roster).length} covered days · {pending.roster.duties.length} duties</p>
+        <p>{rosterDates(pending.roster).filter(date => person.roster && rosterDates(person.roster).includes(date)).length} existing days will be replaced, including cancelled duties.</p>
+        {pending.unread || pending.roster.uncertainDates?.length ? <p role="alert">Some entries were not recognised. Affected dates will not count as free: {pending.roster.uncertainDates?.join(', ') || 'check the source file'}.</p> : null}
+        <div className="panel__actions"><button className="button" onClick={() => { const merged = mergeRoster(person.roster, pending.roster); if (!validRoster(merged)) { setError('The combined roster exceeds the supported five-year range. Remove older data or restore a smaller backup.'); return; } onImport(merged); onNotice(`Imported ${pending.label} for ${person.name}. You can undo this change.`); setPending(undefined); }}>Apply import</button><button className="button button--ghost" onClick={() => setPending(undefined)}>Cancel</button></div>
+      </section> : null}
       {coverage ? (
         <p className="panel__coverage">
-          Roster covers {formatDate(coverage.start)} – {formatDate(coverage.end)}
+          {person.roster ? rosterDates(person.roster).length : 0} imported dates · {formatDate(coverage.start)} – {formatDate(coverage.end)}
           {person.roster?.duties.length ? ` · ${person.roster.duties.length} duties` : ''}
         </p>
       ) : (
@@ -146,9 +161,9 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
         <button className="button" disabled={busy} onClick={() => fileInput.current?.click()} type="button">
           {busy ? 'Reading…' : 'Import roster file'}
         </button>
-        <button className="button button--ghost" onClick={addWorkingWeeks} type="button">Weekends off</button>
+        <button disabled={busy} className="button button--ghost" onClick={addWorkingWeeks} type="button">Weekends off</button>
         {person.roster ? (
-          <button className="button button--quiet" onClick={onRemove} type="button">Remove</button>
+          <button disabled={busy} className="button button--quiet" onClick={() => { setPending(undefined); onRemove(); }} type="button">Remove</button>
         ) : null}
       </div>
 
@@ -177,7 +192,7 @@ function PersonPanel({ person, who, onImport, onRemove, onRename, onNotice }: Pe
           rows={5}
           value={paste}
         />
-        <button className="button button--ghost" onClick={readPaste} type="button">Add these days</button>
+        <button className="button button--ghost" onClick={readPaste} disabled={busy} type="button">Add these days</button>
       </details>
 
       {error ? <p className="panel__error" role="alert">{error}</p> : null}

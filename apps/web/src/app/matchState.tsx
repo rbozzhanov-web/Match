@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   buildAvailability,
   matchDays,
@@ -45,6 +45,14 @@ interface MatchContextValue {
   renamePerson: (who: 'you' | 'them', name: string) => void;
   updateSettings: (settings: Partial<MatchSettings>) => void;
   reset: () => void;
+  saved: boolean;
+  canUndo: boolean;
+  undo: () => void;
+  replaceState: (state: MatchState) => void;
+  demo: boolean;
+  startDemo: (you: Roster, them: Roster) => void;
+  endDemo: () => void;
+  updatePerson: (who: 'you' | 'them', changes: Partial<Person>) => void;
 }
 
 const MatchContext = createContext<MatchContextValue | undefined>(undefined);
@@ -52,9 +60,22 @@ const MatchContext = createContext<MatchContextValue | undefined>(undefined);
 export function MatchProvider({ children, initialState }: { children: ReactNode; initialState?: MatchState }) {
   const [state, setState] = useState<MatchState>(() => initialState ?? loadState());
 
-  useEffect(() => {
-    saveState(state);
+  const [saved, setSaved] = useState(true);
+  const [previous, setPrevious] = useState<MatchState>();
+  const [demo, setDemo] = useState(false);
+  const realState = useRef<MatchState | undefined>(undefined);
+  useEffect(() => { if (!demo) setSaved(saveState(state)); }, [state, demo]);
+  const mutate = useCallback((change: (state: MatchState) => MatchState) => {
+    setState(current => { setPrevious(current); return change(current); });
+  }, []);
+  const undo = useCallback(() => { if (previous) { setState(previous); setPrevious(undefined); } }, [previous]);
+  const replaceState = useCallback((next: MatchState) => mutate(() => next), [mutate]);
+  const startDemo = useCallback((you: Roster, them: Roster) => {
+    realState.current = state; setDemo(true); setPrevious(undefined);
+    setState(current => ({ ...current, you: { ...current.you, roster: { ...you, source: 'sample' } }, them: { ...current.them, roster: { ...them, source: 'sample' } } }));
   }, [state]);
+  const endDemo = useCallback(() => { if (realState.current) setState(realState.current); setDemo(false); setPrevious(undefined); }, []);
+  const updatePerson = useCallback((who: 'you' | 'them', changes: Partial<Person>) => mutate(current => setPerson(current, who, changes)), [mutate]);
 
   const availabilityOptions = useMemo(() => ({
     base: state.settings.base ?? DEFAULT_SETTINGS.base,
@@ -65,12 +86,12 @@ export function MatchProvider({ children, initialState }: { children: ReactNode;
   }), [state.settings]);
 
   const yourDays = useMemo(
-    () => (state.you.roster ? buildAvailability(state.you.roster, { ...availabilityOptions, base: state.you.base }) : []),
-    [availabilityOptions, state.you.base, state.you.roster],
+    () => (state.you.roster ? buildAvailability(state.you.roster, { ...availabilityOptions, base: state.you.base, preDutyBufferMinutes: state.you.preDutyBufferMinutes ?? availabilityOptions.preDutyBufferMinutes, postDutyBufferMinutes: state.you.postDutyBufferMinutes ?? availabilityOptions.postDutyBufferMinutes }) : []),
+    [availabilityOptions, state.you],
   );
   const theirDays = useMemo(
-    () => (state.them.roster ? buildAvailability(state.them.roster, { ...availabilityOptions, base: state.them.base }) : []),
-    [availabilityOptions, state.them.base, state.them.roster],
+    () => (state.them.roster ? buildAvailability(state.them.roster, { ...availabilityOptions, base: state.them.base, preDutyBufferMinutes: state.them.preDutyBufferMinutes ?? availabilityOptions.preDutyBufferMinutes, postDutyBufferMinutes: state.them.postDutyBufferMinutes ?? availabilityOptions.postDutyBufferMinutes }) : []),
+    [availabilityOptions, state.them],
   );
 
   const days = useMemo(() => {
@@ -85,11 +106,11 @@ export function MatchProvider({ children, initialState }: { children: ReactNode;
   const windows = useMemo(() => togetherWindows(days), [days]);
 
   const importRoster = useCallback((who: 'you' | 'them', roster: Roster) => {
-    setState((current) => setRoster(current, who, roster));
-  }, []);
+    mutate((current) => setRoster(current, who, roster));
+  }, [mutate]);
   const removeRoster = useCallback((who: 'you' | 'them') => {
-    setState((current) => clearRoster(current, who));
-  }, []);
+    mutate((current) => clearRoster(current, who));
+  }, [mutate]);
   const renamePerson = useCallback((who: 'you' | 'them', name: string) => {
     setState((current) => setPerson(current, who, { name }));
   }, []);
@@ -97,14 +118,15 @@ export function MatchProvider({ children, initialState }: { children: ReactNode;
     setState((current) => ({ ...current, settings: { ...current.settings, ...settings } }));
   }, []);
   const reset = useCallback(() => {
-    setState(() => {
-      const fresh = loadState();
+    mutate((current) => {
+      const fresh = current;
       return { ...fresh, you: { ...fresh.you, roster: undefined }, them: { ...fresh.them, roster: undefined } };
     });
-  }, []);
+  }, [mutate]);
 
   const value = useMemo<MatchContextValue>(() => ({
     state,
+    saved, canUndo: Boolean(previous), undo, replaceState, demo, startDemo, endDemo, updatePerson,
     you: state.you,
     them: state.them,
     settings: state.settings,
@@ -118,7 +140,7 @@ export function MatchProvider({ children, initialState }: { children: ReactNode;
     renamePerson,
     updateSettings,
     reset,
-  }), [days, importRoster, removeRoster, renamePerson, reset, state, theirDays, updateSettings, windows, yourDays]);
+  }), [saved, previous, undo, replaceState, demo, startDemo, endDemo, updatePerson, days, importRoster, removeRoster, renamePerson, reset, state, theirDays, updateSettings, windows, yourDays]);
 
   return <MatchContext.Provider value={value}>{children}</MatchContext.Provider>;
 }

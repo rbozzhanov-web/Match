@@ -24,10 +24,10 @@ export function CalendarPage() {
   const theirsByDate = useMemo(() => new Map(theirDays.map((day) => [day.date, day])), [theirDays]);
 
   const months = useMemo(() => {
-    const set = new Set(days.map((day) => day.date.slice(0, 7)));
+    const set = new Set([...yourDays, ...theirDays].map((day) => day.date.slice(0, 7)));
     if (!set.size) set.add(now.slice(0, 7));
     return [...set].sort();
-  }, [days, now]);
+  }, [yourDays, theirDays, now]);
 
   /*
    * Which month is on screen, derived rather than stored.
@@ -120,7 +120,7 @@ export function CalendarPage() {
         {selectedDay ? (
           <DayDetail day={selectedDay} youName={you.name} themName={them.name} />
         ) : (
-          <p className="day-detail__hint">Pick a day to see where you each are.</p>
+          selected ? <article className="day-detail__card"><h3>{formatDate(selected)}</h3><p>No confirmed overlap — one or both rosters are missing.</p>{yoursByDate.get(selected) ? <PersonDay name={you.name} day={yoursByDate.get(selected)!} /> : <p>No roster for {you.name}.</p>}{theirsByDate.get(selected) ? <PersonDay name={them.name} day={theirsByDate.get(selected)!} /> : <p>No roster for {them.name}.</p>}</article> : <p className="day-detail__hint">Pick a day to see where you each are.</p>
         )}
       </section>
 
@@ -151,7 +151,7 @@ function DayDetail({ day, youName, themName }: { day: MatchDay; youName: string;
       </div>
       {day.matched ? (
         <p className="day-detail__overlap">
-          Shared: {day.overlap.map(formatInterval).join(', ')} · {formatDuration(day.minutes)}
+          Shared: {(day.sessions ?? [{ station: day.station, overlap: day.overlap }]).map(session => `${session.station}: ${session.overlap.map(formatInterval).join(', ')}`).join(' / ')} · {formatDuration(day.minutes)}
         </p>
       ) : null}
       {day.caution ? <p className="day-detail__caution">{day.caution}</p> : null}
@@ -168,7 +168,12 @@ function PersonDay({ name, day }: { name: string; day: DayAvailability }) {
       </p>
       {/* The label is the route in summary, so it would only repeat the list below it. */}
       {day.flights.length ? null : <p className="person-day__label">{day.label}</p>}
-      <p className="person-day__station">{day.station}</p>
+      <p className="person-day__station">End of day: {day.station}</p>
+      {day.issue ? <p role="status">{day.issue}</p> : null}
+      {day.state === 'unknown' ? <p>No verified availability</p> : (day.locations ?? []).map((slot, i) => <div className="availability-row" key={`${slot.station}-${i}`}>
+        <span>{slot.station} · free {formatInterval(slot)}</span>
+        <div className="availability-track" aria-hidden="true"><span style={{ left: `${slot.start / 1440 * 100}%`, width: `${(slot.end - slot.start) / 1440 * 100}%` }} /></div>
+      </div>)}
       {day.flights.length ? (
         <ul className="person-day__flights">
           {day.flights.map((flight) => (

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { formatDuration, nextWindow, totalTogetherMinutes } from '@match/core';
+import { formatDuration, remainingMatches, togetherWindows, totalTogetherMinutes } from '@match/core';
 
+import { useNow } from '../useNow';
 import { useMatch } from '../../app/matchState';
 import { formatCountdown, formatDate, formatInterval, formatRange, today } from '../format';
 
@@ -12,12 +13,14 @@ import { formatCountdown, formatDate, formatInterval, formatRange, today } from 
  * to ask why a particular day is missing.
  */
 export function TogetherPage() {
-  const { days, windows, you, them, hasBothRosters } = useMatch();
+  const { days, settings, you, them, hasBothRosters, yourDays, theirDays } = useMatch();
+  const clock = useNow();
   const now = today();
-
-  const upcoming = useMemo(() => windows.filter((window) => window.end >= now), [now, windows]);
-  const next = useMemo(() => nextWindow(windows, now), [now, windows]);
-  const minutes = useMemo(() => totalTogetherMinutes(days.filter((day) => day.date >= now)), [days, now]);
+  const remaining = useMemo(() => remainingMatches(days, clock, settings), [days, clock, settings]);
+  const upcoming = useMemo(() => togetherWindows(remaining), [remaining]);
+  const next = upcoming[0];
+  const unverified = new Set([...yourDays, ...theirDays].filter(day => day.state === 'unknown').map(day => day.date)).size;
+  const minutes = totalTogetherMinutes(remaining);
 
   if (!hasBothRosters) {
     return (
@@ -41,6 +44,7 @@ export function TogetherPage() {
         <section className="empty-state">
           <p className="empty-state__mark" aria-hidden="true">⌛</p>
           <h2>Nothing ahead yet</h2>
+          {unverified ? <p>{unverified} dates have missing or unverified roster data and are excluded. Check Calendar or reimport the source roster.</p> : null}
           <p>
             The rosters you have loaded hold no more days where {you.name} and {them.name} are free in
             the same place. Import the next month when it is published.
@@ -52,6 +56,7 @@ export function TogetherPage() {
 
   return (
     <div className="page">
+      {unverified ? <p className="notice">{unverified} dates have missing or unverified data. Check Calendar; these dates do not count as free.</p> : null}
       {next ? (
         <section className="next-window" aria-labelledby="next-window-title">
           <p className="next-window__countdown">{formatCountdown(now, next.start)}</p>
@@ -71,7 +76,7 @@ export function TogetherPage() {
 
       <section className="summary-row" aria-label="What is left in the loaded rosters">
         <div className="summary-tile">
-          <span className="summary-tile__value">{upcoming.reduce((sum, window) => sum + window.days, 0)}</span>
+          <span className="summary-tile__value">{new Set(remaining.map(day => day.date)).size}</span>
           <span className="summary-tile__label">days together</span>
         </div>
         <div className="summary-tile">
@@ -95,11 +100,11 @@ export function TogetherPage() {
             <p className="window-card__headline">{window.headline}</p>
             <ul className="window-card__days-list">
               {window.dates.map((date) => {
-                const day = days.find((candidate) => candidate.date === date);
+                const day = remaining.find((candidate) => candidate.date === date);
                 return (
                   <li key={date}>
                     <span className="window-card__day-date">{formatDate(date)}</span>
-                    <span className="window-card__day-detail">{day?.headline}</span>
+                    <span className="window-card__day-detail">{window.station} · {(day?.sessions?.find(session => session.station === window.station)?.overlap ?? day?.overlap)?.map(formatInterval).join(', ')}</span>
                   </li>
                 );
               })}

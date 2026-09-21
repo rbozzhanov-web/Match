@@ -22,7 +22,7 @@ const GRID_END_MARKERS = ['Total Hours', 'Other Crew', 'Expiry Dates'];
  */
 export function extractDayColumns(page: ExtractedPage): DayColumn[] {
   const lines = tokenizeLines(page);
-  const headingLine = lines.find((line) => countDayHeadings(line) >= 3);
+  const headingLine = lines.find((line) => countDayHeadings(line) >= 1);
   if (!headingLine) return [];
 
   const headings = headingLine.items

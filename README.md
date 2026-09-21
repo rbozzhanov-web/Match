@@ -45,8 +45,10 @@ of the day is that person's free time.
 Two days then match when:
 
 1. neither day is `unknown`, **and**
-2. both people are at the **same station**, **and**
+2. both people have verified free intervals at the **same station**, **and**
 3. their free intervals overlap by at least the configured minimum.
+
+Free intervals follow station stays, not the final station for the whole day. Movements are ordered in UTC using IANA time zones; shared hours are displayed in the station’s local time. An unknown zone or ambiguous report/release time prevents an unverified match.
 
 The station check is what does the real work. It is the reason one person down route never matches
 someone at home — and the reason two people down route *in the same city* do, which is the rarer
@@ -61,7 +63,7 @@ Three ways in, because two people rarely keep their time the same way:
 
 - **A roster file** — either AIMS export works and the app tells them apart from the file itself:
   the **Personal Crew Schedule Report as a PDF**, or the **Crew Schedule saved as a web archive**.
-  Imports merge, so coverage grows month by month rather than being replaced. The PDF reader also
+  Imports are previewed before applying. The newest snapshot replaces all records on its covered dates, including cancellations; other imported dates are retained. Gaps remain unknown. The PDF reader also
   picks up the crew member's base from the report header, which is the station every day is then
   measured against.
 - **Typed day codes** — one line per day, `2026-10-03 OFF`. Codes follow the roster's own table
@@ -73,15 +75,16 @@ while its grid holds a week covers that week, and the rest of the month stays `u
 quietly reading as free — the difference between five days together and twenty-nine invented ones.
 PDF.js is loaded only when a PDF is picked, and is precached, so an import works offline too.
 
-A sample month is available on the Rosters tab to see how a pair of schedules reads before you have
-your own.
+A sample month is available in an isolated, unsaved demo mode. Leaving demo restores the real rosters.
+
+The last roster change can be undone. More provides a local JSON backup and validated restore; storage failures are visible. Each person can set their own base and preparation/recovery buffers.
 
 ## Develop and verify
 
 ```sh
 npm install
 npm run dev
-npm run test        # 61 tests: engine in node, pages in jsdom
+npm run test        # regression tests: engine in node, pages in jsdom
 npm run typecheck
 npm run build
 ```
@@ -139,6 +142,7 @@ Real rosters contain personal information and must not be committed to this repo
 - **Same-flight detection.** Both roster exports carry the crew list per sector, so two people
   rostered on the same aircraft is knowable and is arguably the most literal "together" of all. The
   importers currently drop crew; the match engine has no notion of it.
-- **Time zones.** Matching is refused across stations rather than computed, so a shared layover is
-  found but "you land in Almaty as she leaves Dubai" is not modelled. eScrew's `stationTime` has the
-  zone table this would need.
+- **Additional station zones.** `packages/core/src/roster/location.ts` contains the supported station-to-IANA mapping. Unknown stations are deliberately not guessed. Airport transfers between different airport codes in one city are not inferred.
+- **Real-device validation.** Automated tests and mobile browser checks do not replace testing Safari / an installed iOS PWA against real, locally held roster exports.
+
+Existing legacy snapshots cannot prove old gaps: only explicit roster records are retained as confirmed coverage. Reimport existing files to verify their blank layover dates. Night counts require both people to be free at the same station from 23:00 through 08:00. Upcoming totals and calendar exports exclude elapsed time.
