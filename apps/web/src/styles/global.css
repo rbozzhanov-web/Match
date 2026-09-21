@@ -2,7 +2,22 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #root { height: 100%; }
+/* Only the pager and its pages scroll. The document must never become a
+   second vertical scroller when a gesture reaches a page boundary. */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+#root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 html { background-color: var(--surface); }
 
 body {
@@ -39,16 +54,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  min-height: 100svh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
-@media (display-mode: standalone) {
-  .app-frame { height: 100dvh; min-height: 0; }
-}
-
 .primary-tab-header {
+  touch-action: none;
   position: relative;
   z-index: 1;
   flex: none;
@@ -89,6 +101,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior: none;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -101,6 +114,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   min-width: 0;
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior-y: none;
   scroll-snap-align: start;
   -webkit-overflow-scrolling: touch;
 }
@@ -115,6 +129,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ------------------------------------------------------------------- tab dock */
 
 .tab-dock {
+  touch-action: none;
   position: absolute;
   z-index: 3;
   right: var(--inset-right);
