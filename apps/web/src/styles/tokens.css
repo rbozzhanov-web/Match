@@ -9,19 +9,19 @@
 :root {
   color-scheme: light;
 
-  --ink: #2b1a2f;
-  --ink-soft: #6b5570;
-  --ink-faint: #9c8aa0;
+  --ink: #18233b;
+  --ink-soft: #59677d;
+  --ink-faint: #8490a3;
 
-  --surface: #fdf7f7;
-  --surface-raised: #ffffff;
-  --surface-sunken: #f4ecee;
-  --border: #ead9dd;
-  --border-strong: #d9c2c8;
+  --surface: #eef3f8;
+  --surface-raised: rgb(255 255 255 / .68);
+  --surface-sunken: rgb(237 243 249 / .78);
+  --border: rgb(255 255 255 / .74);
+  --border-strong: rgb(178 194 211 / .58);
 
-  --accent: #c4577c;
-  --accent-soft: #fbe9ef;
-  --accent-strong: #a13a5f;
+  --accent: #d96f92;
+  --accent-soft: rgb(255 224 234 / .7);
+  --accent-strong: #b8446b;
   --accent-ink: #ffffff;
 
   --state-free: #3f9d68;
@@ -39,11 +39,11 @@
   --state-unknown: #c9bfcc;
   --state-unknown-soft: #f3eff4;
 
-  --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 22px;
-  --shadow-card: 0 1px 2px rgba(43, 26, 47, .06), 0 8px 24px rgba(43, 26, 47, .06);
-  --shadow-dock: 0 -1px 0 var(--border), 0 -12px 32px rgba(43, 26, 47, .07);
+  --radius-sm: 12px;
+  --radius: 20px;
+  --radius-lg: 28px;
+  --shadow-card: 0 1px 0 rgb(255 255 255 / .78) inset, 0 16px 38px rgb(70 94 125 / .12);
+  --shadow-dock: 0 -1px 0 rgb(255 255 255 / .72), 0 -14px 38px rgb(50 72 102 / .12);
 
   --dock-height: 64px;
   --page-gutter: 16px;
@@ -52,20 +52,20 @@
 :root.theme-dark {
   color-scheme: dark;
 
-  --ink: #f3e9ee;
-  --ink-soft: #bda8b6;
-  --ink-faint: #8c7a88;
+  --ink: #f1f6ff;
+  --ink-soft: #bec8d8;
+  --ink-faint: #8995a8;
 
-  --surface: #171018;
-  --surface-raised: #221a24;
-  --surface-sunken: #120c13;
-  --border: #332836;
-  --border-strong: #47394b;
+  --surface: #101725;
+  --surface-raised: rgb(27 37 57 / .66);
+  --surface-sunken: rgb(13 21 35 / .72);
+  --border: rgb(183 207 242 / .14);
+  --border-strong: rgb(183 207 242 / .25);
 
-  --accent: #e78aa8;
-  --accent-soft: #38222c;
-  --accent-strong: #f2a6bf;
-  --accent-ink: #24121a;
+  --accent: #f08aaa;
+  --accent-soft: rgb(101 55 78 / .66);
+  --accent-strong: #ffb0c7;
+  --accent-ink: #30131f;
 
   --state-free: #6fce97;
   --state-free-soft: #1b2f23;
@@ -82,6 +82,6 @@
   --state-unknown: #5b4f5e;
   --state-unknown-soft: #1d181f;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .35);
-  --shadow-dock: 0 -1px 0 var(--border), 0 -12px 32px rgba(0, 0, 0, .45);
+  --shadow-card: 0 1px 0 rgb(255 255 255 / .08) inset, 0 18px 42px rgb(0 0 0 / .32);
+  --shadow-dock: 0 -1px 0 rgb(255 255 255 / .08), 0 -14px 42px rgb(0 0 0 / .4);
 }
