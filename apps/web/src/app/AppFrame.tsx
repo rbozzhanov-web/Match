@@ -140,7 +140,6 @@ export function AppFrame() {
 
   return (
     <div className={`app-frame${usesDarkTheme ? ' app-frame--dark' : ''}`}>
-      <div className="app-wallpaper" aria-hidden="true" />
       <header className="primary-tab-header">
         <h1 className="primary-tab-header__accessible-title">{items[visualIndex].title}</h1>
         <div aria-hidden="true" className="primary-tab-header__titles">

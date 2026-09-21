@@ -3,22 +3,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root { height: 100%; }
-html { background: var(--surface); }
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: inherit;
-  pointer-events: none;
-}
-
-@media (display-mode: standalone) {
-  body { position: fixed; inset: 0; overflow: hidden; }
-}
+html { background-color: var(--surface); }
 
 body {
   margin: 0;
-  background: var(--surface);
+  background: transparent;
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 16px;
@@ -56,17 +45,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 @media (display-mode: standalone) {
-  .app-frame { height: 100%; min-height: 0; }
-}
-
-.app-wallpaper {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(90% 60% at 12% 0%, var(--accent-soft), transparent 70%),
-    radial-gradient(70% 50% at 100% 8%, var(--state-leave-soft), transparent 72%);
-  opacity: .85;
+  .app-frame { height: 100dvh; min-height: 0; }
 }
 
 .primary-tab-header {
@@ -544,34 +523,32 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* A single quiet atmosphere sits behind every screen, including both safe areas.
    Components are deliberately translucent so the wallpaper reads as one layer. */
-body {
+html {
   background:
+    radial-gradient(38% 28% at 12% 14%, rgb(255 255 255 / .7), transparent 100%),
+    radial-gradient(46% 32% at 93% 29%, rgb(255 242 215 / .52), transparent 100%),
+    radial-gradient(55% 34% at 42% 94%, rgb(197 224 245 / .5), transparent 100%),
     radial-gradient(100% 55% at 12% -8%, rgb(255 214 225 / .9), transparent 66%),
     radial-gradient(78% 46% at 100% 7%, rgb(171 224 245 / .86), transparent 69%),
     linear-gradient(155deg, #f7f9fc 0%, #eaf2f8 53%, #f7eff4 100%);
 }
 
-:root.theme-dark body {
+:root.theme-dark {
   background:
+    radial-gradient(45% 30% at 14% 12%, rgb(255 164 195 / .15), transparent 100%),
+    radial-gradient(54% 36% at 100% 26%, rgb(109 212 247 / .12), transparent 100%),
+    radial-gradient(52% 42% at 54% 100%, rgb(255 188 144 / .09), transparent 100%),
     radial-gradient(95% 48% at 8% -8%, rgb(131 63 94 / .6), transparent 68%),
     radial-gradient(70% 45% at 100% 0%, rgb(29 99 128 / .62), transparent 69%),
     linear-gradient(155deg, #11192a 0%, #101827 50%, #221521 100%);
 }
 
-.app-wallpaper {
-  position: fixed;
-  background:
-    radial-gradient(38% 28% at 12% 14%, rgb(255 255 255 / .7), transparent 100%),
-    radial-gradient(46% 32% at 93% 29%, rgb(255 242 215 / .52), transparent 100%),
-    radial-gradient(55% 34% at 42% 94%, rgb(197 224 245 / .5), transparent 100%);
-  opacity: 1;
-}
-
-:root.theme-dark .app-wallpaper {
-  background:
-    radial-gradient(45% 30% at 14% 12%, rgb(255 164 195 / .15), transparent 100%),
-    radial-gradient(54% 36% at 100% 26%, rgb(109 212 247 / .12), transparent 100%),
-    radial-gradient(52% 42% at 54% 100%, rgb(255 188 144 / .09), transparent 100%);
+/* The document canvas owns the complete wallpaper, including the area outside
+   WebKit's content box. Never restart the gradient on body or a fixed overlay. */
+html, :root.theme-dark {
+  background-attachment: fixed;
+  background-size: 100% 100lvh;
+  background-repeat: no-repeat;
 }
 
 .primary-tab-header {
