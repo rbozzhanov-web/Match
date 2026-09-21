@@ -241,14 +241,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .relationship-note {
-  padding: 11px 14px;
+  display: grid;
+  gap: 5px;
+  padding: 15px 16px;
   border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
-  border-radius: 16px;
+  border-radius: 20px;
   background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
   color: var(--ink-soft);
   font-size: 13px;
   line-height: 1.42;
 }
+.relationship-note__eyebrow { color: var(--accent-strong); font-size: 10px; font-weight: 750; letter-spacing: .12em; }
+.relationship-note__title { color: var(--ink); font-size: 16px; font-weight: 700; letter-spacing: -.015em; }
 
 .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; }
 .field select {
@@ -623,6 +627,22 @@ body {
 .next-window__headline { margin-top: 3px; font-weight: 560; }
 .next-window__detail { max-width: 80%; }
 .next-window__badge { border: 1px solid rgb(255 255 255 / .24); backdrop-filter: blur(12px); }
+.next-window--family {
+  background:
+    radial-gradient(100% 100% at 100% 0%, rgb(218 245 218 / .28), transparent 53%),
+    radial-gradient(70% 90% at 0% 100%, rgb(170 230 217 / .24), transparent 63%),
+    linear-gradient(145deg, #59a784 0%, #35816f 52%, #286455 100%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / .48) inset, 0 18px 36px rgb(35 105 82 / .2);
+}
+.next-window--layover {
+  background:
+    radial-gradient(100% 100% at 100% 0%, rgb(220 241 255 / .34), transparent 53%),
+    radial-gradient(70% 90% at 0% 100%, rgb(198 228 255 / .3), transparent 63%),
+    linear-gradient(145deg, #5a99d9 0%, #467abe 52%, #365e9a 100%);
+}
+.next-window__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 7px; }
+.next-window__facts p { display: grid; gap: 2px; min-width: 0; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.next-window__facts span { font-size: 9px; font-weight: 700; letter-spacing: .1em; opacity: .68; }
 
 .summary-row { gap: 10px; }
 .summary-tile { min-height: 84px; justify-content: center; border-radius: 18px; }

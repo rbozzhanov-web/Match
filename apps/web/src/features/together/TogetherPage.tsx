@@ -70,24 +70,33 @@ export function TogetherPage() {
   return (
     <div className="page">
       {unverified ? <p className="notice">{unverified} dates have missing or unverified data. Check Calendar; these dates do not count as free.</p> : null}
-      <p className="relationship-note">
+      <section className="relationship-note" aria-label="How time together is grouped">
+        <span className="relationship-note__eyebrow">YOUR RHYTHM</span>
+        <p className="relationship-note__title">Time together, in the context of real life.</p>
+        <p>
         {livingTogether
-          ? 'Weekday 08:00–17:00 is marked as time for just you two. Evenings and weekends are kept as family time.'
-          : 'Until 1 Nov, home time counts only on weekdays from 08:00–17:00, while the children are at school or nursery. Shared layovers stay visible.'}
-      </p>
+          ? 'Weekday 08:00–17:00 is time just for you two. Evenings and weekends stay visible as family time.'
+          : 'Until 1 Nov, home time is yours only on weekdays from 08:00–17:00, while the children are at school or nursery. Shared layovers stay visible.'}
+        </p>
+      </section>
       {nextRealMoment ? (
-        <section className="next-window" aria-labelledby="next-window-title">
+        <section className={`next-window next-window--${nextRealMoment.kind}`} aria-labelledby="next-window-title">
           <p className="next-window__countdown">{nextRealMoment.kind === 'family' ? 'NEXT FAMILY TIME' : 'NEXT TIME JUST FOR YOU TWO'}</p>
           <h2 className="next-window__range" id="next-window-title">{formatDate(nextRealMoment.date)}</h2>
           <p className="next-window__headline">
             {nextRealMoment.kind === 'layover' ? `Together in ${nextRealMoment.station}` : nextRealMoment.kind === 'family' ? 'Together at home with the children' : 'Together while the children are out'}
           </p>
-          <p className="next-window__detail">{formatInterval(nextRealMoment.interval)} · {formatDuration(nextRealMoment.minutes)}</p>
-          <p className="next-window__badge">{formatCountdown(now, nextRealMoment.date)}</p>
+          <div className="next-window__facts">
+            <p><span>WHEN</span>{formatInterval(nextRealMoment.interval)}</p>
+            <p><span>TIME</span>{formatDuration(nextRealMoment.minutes)}</p>
+            <p><span>WHERE</span>{nextRealMoment.station}</p>
+          </div>
+          <p className="next-window__badge">{nextRealMoment.kind === 'family' ? 'Family time' : 'Just you two'} · {formatCountdown(now, nextRealMoment.date)}</p>
         </section>
       ) : null}
 
       <section className="summary-row" aria-label="What is left in the loaded rosters">
+        <h3 className="visually-hidden">Time in the loaded rosters</h3>
         <div className="summary-tile">
           <span className="summary-tile__value">{formatDuration(quietMinutes)}</span>
           <span className="summary-tile__label">just you two</span>
