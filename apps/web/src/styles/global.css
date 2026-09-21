@@ -36,6 +36,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
 }
 
@@ -103,34 +104,37 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 8px var(--page-gutter) calc(var(--dock-height) + env(safe-area-inset-bottom) + 24px);
+  padding: 8px var(--page-gutter) calc(var(--dock-height) + env(safe-area-inset-bottom) + 44px);
 }
 
 /* ------------------------------------------------------------------- tab dock */
 
 .tab-dock {
-  position: relative;
-  z-index: 2;
-  flex: none;
+  position: absolute;
+  z-index: 3;
+  right: var(--page-gutter);
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: var(--page-gutter);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  height: calc(var(--dock-height) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
-  backdrop-filter: blur(18px);
+  height: var(--dock-height);
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / .58);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  backdrop-filter: blur(24px) saturate(145%);
   box-shadow: var(--shadow-dock);
 }
 
 /* Rides the pager's scroll position rather than the active route, so it tracks a drag continuously
    instead of jumping when the URL finally changes. */
 .tab-dock__indicator {
-  position: absolute;
-  top: 6px;
+  top: 7px;
   left: 0;
   width: 25%;
-  height: 34px;
-  border-radius: var(--radius);
+  height: 40px;
+  border-radius: 19px;
   background: var(--accent-soft);
   transform: translateX(calc(var(--tab-progress, 0) * 100%));
   transition: background .2s ease;
@@ -142,7 +146,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 0;
+  padding: 9px 0 7px;
   font-size: 11px;
   font-weight: 560;
   color: var(--ink-faint);
@@ -523,13 +527,15 @@ body {
 }
 
 .primary-tab-header {
-  min-height: calc(64px + env(safe-area-inset-top));
-  padding: max(12px, env(safe-area-inset-top)) var(--page-gutter) 10px;
+  min-height: calc(66px + env(safe-area-inset-top));
+  padding: max(13px, env(safe-area-inset-top)) var(--page-gutter) 11px;
   background: linear-gradient(to bottom, rgb(255 255 255 / .42), transparent);
   backdrop-filter: blur(18px) saturate(130%);
 }
 
 :root.theme-dark .primary-tab-header { background: linear-gradient(to bottom, rgb(9 15 27 / .34), transparent); }
+:root.theme-dark .tab-dock { border-color: rgb(205 225 255 / .2); }
+:root.theme-dark .tab-dock::before { opacity: .38; }
 
 .primary-tab-header__titles { margin-top: 1px; }
 .primary-tab-header__titles > span { font-size: 30px; font-weight: 720; letter-spacing: -.035em; }
@@ -538,7 +544,7 @@ body {
 
 .tab-dock {
   background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
-  border-top: 1px solid rgb(255 255 255 / .48);
+  border-color: rgb(255 255 255 / .54);
   backdrop-filter: blur(28px) saturate(150%);
 }
 
@@ -547,18 +553,19 @@ body {
   position: absolute;
   inset: 0 0 auto;
   height: 1px;
+  border-radius: inherit;
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / .92), transparent);
 }
 
 .tab-dock__indicator {
-  top: 5px;
-  height: 38px;
+  top: 7px;
+  height: 40px;
   border: 1px solid rgb(255 255 255 / .56);
   background: color-mix(in srgb, var(--accent-soft) 84%, transparent);
   box-shadow: 0 1px 0 rgb(255 255 255 / .7) inset, 0 6px 14px rgb(150 68 101 / .11);
 }
 
-.tab-dock__item { padding-top: 7px; font-size: 10px; letter-spacing: .01em; }
+.tab-dock__item { padding-top: 9px; font-size: 10px; letter-spacing: .01em; }
 .tab-dock__item > span:first-child { font-size: 16px; }
 
 .panel, .summary-tile, .window-card, .day-detail__card {
@@ -732,4 +739,10 @@ body {
   .next-window { padding: 22px; }
   .summary-tile { padding-inline: 5px; }
   .window-card__header { align-items: flex-start; flex-direction: column; gap: 5px; }
+}
+
+@media (max-height: 700px) {
+  .primary-tab-header { min-height: calc(58px + env(safe-area-inset-top)); padding-bottom: 7px; }
+  .page { padding-top: 8px; gap: 12px; }
+  .tab-dock { bottom: max(7px, env(safe-area-inset-bottom)); }
 }
