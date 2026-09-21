@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { addDays, eachDate, formatDuration, weekday, type DayAvailability, type MatchDay } from '@match/core';
+import { addDays, eachDate, formatDuration, relationshipMoments, weekday, type DayAvailability, type MatchDay, type RelationshipMoment } from '@match/core';
 
 import { useMatch } from '../../app/matchState';
 import { formatDate, formatDayOfMonth, formatInterval, formatMonth, today } from '../format';
@@ -20,6 +20,13 @@ export function CalendarPage() {
   const [selected, setSelected] = useState<string | undefined>(undefined);
 
   const byDate = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
+  const momentsByDate = useMemo(() => {
+    const moments = new Map<string, RelationshipMoment[]>();
+    for (const moment of relationshipMoments(days)) {
+      moments.set(moment.date, [...(moments.get(moment.date) ?? []), moment]);
+    }
+    return moments;
+  }, [days]);
   const yoursByDate = useMemo(() => new Map(yourDays.map((day) => [day.date, day])), [yourDays]);
   const theirsByDate = useMemo(() => new Map(theirDays.map((day) => [day.date, day])), [theirDays]);
 
@@ -90,13 +97,19 @@ export function CalendarPage() {
           const yours = yoursByDate.get(date);
           const theirs = theirsByDate.get(date);
           const matched = Boolean(match?.matched);
+          const moments = momentsByDate.get(date) ?? [];
+          const hasPrivate = moments.some(moment => moment.kind === 'private' || moment.kind === 'layover');
+          const hasFamily = moments.some(moment => moment.kind === 'family');
+          const context = hasPrivate ? 'time just for you two' : hasFamily ? 'family time' : matched ? 'shared roster time, but not an available date yet' : undefined;
           return (
             <button
-              aria-label={`${formatDate(date)}: ${match?.headline ?? 'no roster'}`}
+              aria-label={`${formatDate(date)}: ${context ?? match?.headline ?? 'no roster'}`}
               aria-pressed={selected === date}
               className={[
                 'calendar-cell',
                 matched ? `calendar-cell--matched calendar-cell--${match?.quality}` : '',
+                hasPrivate ? 'calendar-cell--private' : '',
+                hasFamily ? 'calendar-cell--family' : '',
                 match?.tentative ? 'calendar-cell--tentative' : '',
                 date === now ? 'calendar-cell--today' : '',
                 selected === date ? 'calendar-cell--selected' : '',
@@ -110,7 +123,7 @@ export function CalendarPage() {
                 <span className={`state-dot state-dot--${yours?.state ?? 'unknown'}`} />
                 <span className={`state-dot state-dot--${theirs?.state ?? 'unknown'}`} />
               </span>
-              {matched ? <span aria-hidden="true" className="calendar-cell__mark">❥</span> : null}
+              {hasPrivate ? <span aria-hidden="true" className="calendar-cell__mark">♥</span> : hasFamily ? <span aria-hidden="true" className="calendar-cell__mark">•</span> : null}
             </button>
           );
         })}
@@ -118,13 +131,15 @@ export function CalendarPage() {
 
       <section aria-live="polite" className="day-detail">
         {selectedDay ? (
-          <DayDetail day={selectedDay} youName={you.name} themName={them.name} />
+          <DayDetail day={selectedDay} moments={momentsByDate.get(selectedDay.date) ?? []} youName={you.name} themName={them.name} />
         ) : (
           selected ? <article className="day-detail__card"><h3>{formatDate(selected)}</h3><p>No confirmed overlap — one or both rosters are missing.</p>{yoursByDate.get(selected) ? <PersonDay name={you.name} day={yoursByDate.get(selected)!} /> : <p>No roster for {you.name}.</p>}{theirsByDate.get(selected) ? <PersonDay name={them.name} day={theirsByDate.get(selected)!} /> : <p>No roster for {them.name}.</p>}</article> : <p className="day-detail__hint">Pick a day to see where you each are.</p>
         )}
       </section>
 
       <section aria-label="What the colours mean" className="legend">
+        <span className="legend__item"><span className="calendar-legend__private" aria-hidden="true">♥</span> just you two</span>
+        <span className="legend__item"><span className="calendar-legend__family" aria-hidden="true">•</span> family time</span>
         {(['free', 'leave', 'standby', 'duty', 'away'] as const).map((state) => (
           <span className="legend__item" key={state}>
             <span className={`state-dot state-dot--${state}`} aria-hidden="true" />
@@ -136,7 +151,9 @@ export function CalendarPage() {
   );
 }
 
-function DayDetail({ day, youName, themName }: { day: MatchDay; youName: string; themName: string }) {
+function DayDetail({ day, moments, youName, themName }: { day: MatchDay; moments: RelationshipMoment[]; youName: string; themName: string }) {
+  const hasPrivate = moments.some(moment => moment.kind === 'private' || moment.kind === 'layover');
+  const hasFamily = moments.some(moment => moment.kind === 'family');
   return (
     <article className="day-detail__card">
       <header>
@@ -154,6 +171,8 @@ function DayDetail({ day, youName, themName }: { day: MatchDay; youName: string;
           Shared: {(day.sessions ?? [{ station: day.station, overlap: day.overlap }]).map(session => `${session.station}: ${session.overlap.map(formatInterval).join(', ')}`).join(' / ')} · {formatDuration(day.minutes)}
         </p>
       ) : null}
+      {hasPrivate ? <p className="day-detail__context">♥ Time just for you two: {moments.filter(moment => moment.kind !== 'family').map(moment => formatInterval(moment.interval)).join(', ')}</p> : null}
+      {hasFamily ? <p className="day-detail__context">• Family time: {moments.filter(moment => moment.kind === 'family').map(moment => formatInterval(moment.interval)).join(', ')}</p> : null}
       {day.caution ? <p className="day-detail__caution">{day.caution}</p> : null}
     </article>
   );

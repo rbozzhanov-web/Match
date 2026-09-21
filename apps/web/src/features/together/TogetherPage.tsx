@@ -1,5 +1,12 @@
 import { useMemo } from 'react';
-import { formatDuration, remainingMatches, togetherWindows, totalTogetherMinutes } from '@match/core';
+import {
+  DEFAULT_MOVE_IN_DATE,
+  formatDuration,
+  relationshipMinutes,
+  relationshipMoments,
+  remainingMatches,
+  togetherWindows,
+} from '@match/core';
 
 import { useNow } from '../useNow';
 import { useMatch } from '../../app/matchState';
@@ -18,9 +25,15 @@ export function TogetherPage() {
   const now = today();
   const remaining = useMemo(() => remainingMatches(days, clock, settings), [days, clock, settings]);
   const upcoming = useMemo(() => togetherWindows(remaining), [remaining]);
-  const next = upcoming[0];
+  const moments = useMemo(() => relationshipMoments(remaining), [remaining]);
+  const upcomingMoments = moments.filter(moment => moment.date >= now);
+  const nextPrivate = upcomingMoments.find(moment => moment.kind === 'private' || moment.kind === 'layover');
+  const nextFamily = upcomingMoments.find(moment => moment.kind === 'family');
+  const nextRealMoment = nextPrivate ?? nextFamily;
+  const quietMinutes = relationshipMinutes(upcomingMoments, 'private') + relationshipMinutes(upcomingMoments, 'layover');
+  const familyMinutes = relationshipMinutes(upcomingMoments, 'family');
+  const livingTogether = now >= DEFAULT_MOVE_IN_DATE;
   const unverified = new Set([...yourDays, ...theirDays].filter(day => day.state === 'unknown').map(day => day.date)).size;
-  const minutes = totalTogetherMinutes(remaining);
 
   if (!hasBothRosters) {
     return (
@@ -57,40 +70,40 @@ export function TogetherPage() {
   return (
     <div className="page">
       {unverified ? <p className="notice">{unverified} dates have missing or unverified data. Check Calendar; these dates do not count as free.</p> : null}
-      {next ? (
+      <p className="relationship-note">
+        {livingTogether
+          ? 'Weekday 08:00–17:00 is marked as time for just you two. Evenings and weekends are kept as family time.'
+          : 'Until 1 Nov, home time counts only on weekdays from 08:00–17:00, while the children are at school or nursery. Shared layovers stay visible.'}
+      </p>
+      {nextRealMoment ? (
         <section className="next-window" aria-labelledby="next-window-title">
-          <p className="next-window__countdown">{formatCountdown(now, next.start)}</p>
-          <h2 className="next-window__range" id="next-window-title">{formatRange(next.start, next.end)}</h2>
-          <p className="next-window__headline">{next.headline}</p>
-          {next.commonHours ? (
-            <p className="next-window__detail">Free together every day {formatInterval(next.commonHours)}</p>
-          ) : null}
-          {next.kind === 'layover' ? (
-            <p className="next-window__badge next-window__badge--layover">Both down route in {next.station}</p>
-          ) : null}
-          {next.tentative ? (
-            <p className="next-window__badge next-window__badge--tentative">Rests on a standby day — it can still be called</p>
-          ) : null}
+          <p className="next-window__countdown">{nextRealMoment.kind === 'family' ? 'NEXT FAMILY TIME' : 'NEXT TIME JUST FOR YOU TWO'}</p>
+          <h2 className="next-window__range" id="next-window-title">{formatDate(nextRealMoment.date)}</h2>
+          <p className="next-window__headline">
+            {nextRealMoment.kind === 'layover' ? `Together in ${nextRealMoment.station}` : nextRealMoment.kind === 'family' ? 'Together at home with the children' : 'Together while the children are out'}
+          </p>
+          <p className="next-window__detail">{formatInterval(nextRealMoment.interval)} · {formatDuration(nextRealMoment.minutes)}</p>
+          <p className="next-window__badge">{formatCountdown(now, nextRealMoment.date)}</p>
         </section>
       ) : null}
 
       <section className="summary-row" aria-label="What is left in the loaded rosters">
         <div className="summary-tile">
-          <span className="summary-tile__value">{new Set(remaining.map(day => day.date)).size}</span>
-          <span className="summary-tile__label">days together</span>
+          <span className="summary-tile__value">{formatDuration(quietMinutes)}</span>
+          <span className="summary-tile__label">just you two</span>
+        </div>
+        <div className="summary-tile">
+          <span className="summary-tile__value">{formatDuration(familyMinutes)}</span>
+          <span className="summary-tile__label">family time</span>
         </div>
         <div className="summary-tile">
           <span className="summary-tile__value">{upcoming.length}</span>
-          <span className="summary-tile__label">{upcoming.length === 1 ? 'window' : 'windows'}</span>
-        </div>
-        <div className="summary-tile">
-          <span className="summary-tile__value">{formatDuration(minutes)}</span>
-          <span className="summary-tile__label">shared time</span>
+          <span className="summary-tile__label">shared windows</span>
         </div>
       </section>
 
-      <section aria-label="Every window ahead" className="window-list">
-        <h3 className="section-heading">Ahead of you</h3>
+      <section aria-label="Every shared window ahead" className="window-list">
+        <h3 className="section-heading">All shared roster windows</h3>
         {upcoming.map((window) => (
           <article className={`window-card window-card--${window.quality}`} key={`${window.start}-${window.station}`}>
             <header className="window-card__header">

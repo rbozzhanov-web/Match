@@ -51,9 +51,10 @@ describe('the page that answers the question', () => {
     );
     renderTogether(state);
 
-    // The range shows twice — once in the hero and once in the card for the same window — so this
-    // pins the hero by its level rather than asking for "the" heading.
-    expect(screen.getByRole('heading', { level: 2, name: /Fri 5 Jun – Sat 6 Jun/ })).toBeInTheDocument();
+    // The hero answers the more useful question first: the next private daytime window.
+    expect(screen.getByRole('heading', { level: 2, name: /Fri 5 Jun/ })).toBeInTheDocument();
+    expect(screen.getByText('Together while the children are out')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: /Fri 5 Jun – Sat 6 Jun/ })).toBeInTheDocument();
     expect(screen.getAllByText('2 days together · 30h').length).toBeGreaterThan(0);
   });
 
@@ -62,10 +63,10 @@ describe('the page that answers the question', () => {
     renderTogether(state);
 
     const summary = screen.getByLabelText('What is left in the loaded rosters');
-    const daysTile = within(summary).getByText('days together').closest('.summary-tile');
-    expect(daysTile).not.toBeNull();
-    expect(within(daysTile as HTMLElement).getByText('1')).toBeInTheDocument();
-    expect(within(summary).getByText('15h')).toBeInTheDocument();
+    const privateTile = within(summary).getByText('just you two').closest('.summary-tile');
+    expect(privateTile).not.toBeNull();
+    expect(within(privateTile as HTMLElement).getByText('9h')).toBeInTheDocument();
+    expect(within(summary).getByText('family time')).toBeInTheDocument();
   });
 
   it('says so plainly when two rosters never line up', () => {

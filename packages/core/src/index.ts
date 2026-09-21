@@ -69,6 +69,16 @@ export {
   type TogetherWindow,
 } from './match/windows';
 
+export {
+  DEFAULT_CHILDCARE_HOURS,
+  DEFAULT_MOVE_IN_DATE,
+  relationshipMinutes,
+  relationshipMoments,
+  type RelationshipMoment,
+  type RelationshipMomentKind,
+  type RelationshipOptions,
+} from './match/relationship';
+
 export { buildTogetherIcs, type IcsOptions } from './calendar/ics';
 
 /*

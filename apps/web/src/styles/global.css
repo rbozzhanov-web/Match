@@ -240,6 +240,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 14px;
 }
 
+.relationship-note {
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.42;
+}
+
 .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; }
 .field select {
   font: inherit;
@@ -669,8 +679,21 @@ body {
 }
 .calendar-cell--today { box-shadow: inset 0 0 0 2px var(--accent), 0 3px 9px rgb(192 74 115 / .13); }
 .calendar-cell--selected { background: linear-gradient(145deg, var(--accent), var(--accent-strong)); }
+.calendar-cell--private {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .42), 0 4px 12px rgb(202 79 126 / .11);
+}
+.calendar-cell--family:not(.calendar-cell--private) {
+  border-color: color-mix(in srgb, var(--state-free) 36%, var(--border));
+  background: color-mix(in srgb, var(--state-free-soft) 54%, var(--surface-raised));
+}
+.calendar-cell--family .calendar-cell__mark { color: var(--state-free); }
+.calendar-legend__private { color: var(--accent-strong); font-size: 14px; line-height: 1; }
+.calendar-legend__family { color: var(--state-free); font-size: 19px; line-height: .45; }
 .state-dot { width: 6px; height: 6px; }
 .day-detail__card { border-radius: 20px; }
+.day-detail__context { font-size: 13px; font-weight: 600; color: var(--accent-strong); }
+.day-detail__context + .day-detail__context { color: var(--state-free); }
 
 .panel__name input { border-bottom-color: color-mix(in srgb, var(--border-strong) 80%, transparent); }
 .panel__base { background: color-mix(in srgb, var(--surface-sunken) 86%, transparent); }
