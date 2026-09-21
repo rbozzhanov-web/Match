@@ -456,3 +456,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .availability-row { margin: 8px 0; }
 .availability-track { display: flex; height: 8px; background: color-mix(in srgb, currentColor 10%, transparent); border-radius: 8px; position: relative; overflow: hidden; }
 .availability-track span { position: absolute; top: 0; bottom: 0; background: #2f80ed; border-radius: 8px; }
+
+/* Let form controls shrink inside the mobile grid instead of widening the page. */
+.roster-fields { grid-template-columns: minmax(0, 1fr); }
+.panel, .panel__name { min-width: 0; }
+.panel__name input { width: 100%; min-width: 0; }
+.field select { max-width: 60%; min-width: 0; }
+.field input:not([type='checkbox']) {
+  width: 6ch;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+.notice, .import-preview { overflow-wrap: anywhere; }

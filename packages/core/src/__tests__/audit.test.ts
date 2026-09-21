@@ -49,6 +49,13 @@ describe('audit regressions: reliable availability', () => {
     expect(stationInstant('2026-10-25', 150, 'FRA')).toBeUndefined();
     expect(stationInstant('2026-03-29', 150, 'FRA')).toBeUndefined();
   });
+  it('does not treat ambiguous ground-duty hours as free', () => {
+    const r = empty('2026-10-25', '2026-10-25', 'FRA');
+    r.groundDuties = [{date: '2026-10-25', code: 'SIM', start: '02:30', end: '12:00'}];
+    const day = buildAvailability(r)[0];
+    expect(day.state).toBe('unknown');
+    expect(day.freeMinutes).toBe(0);
+  });
   it('trims elapsed days and hours using the station clock', () => {
     const days = matchDays(buildAvailability(empty('2026-09-19','2026-09-21')),buildAvailability(empty('2026-09-19','2026-09-21')));
     const remaining = remainingMatches(days, new Date('2026-09-20T15:00:00Z'));

@@ -125,6 +125,9 @@ export function locatedAvailability(roster: Roster, base: string, settings: Sett
           if (start !== undefined && end !== undefined) {
             if (end <= start) end += 1440;
             occupied.push({start: start - settings.preDutyBufferMinutes,end:end + settings.postDutyBufferMinutes});
+          } else if (duty.date === date) {
+            issues.set(date, 'Duty time is ambiguous in this station time zone. Check the source roster.');
+            occupied.push({start:dayStart,end:dayEnd});
           }
         }
         for (const g of ground) {
@@ -133,6 +136,10 @@ export function locatedAvailability(roster: Roster, base: string, settings: Sett
           if (a === null || b === null) continue;
           const start=stationInstant(g.date,a,stay.station),end=stationInstant(b<=a?addDays(g.date,1):g.date,b,stay.station);
           if (start!==undefined && end!==undefined) occupied.push({start:start-settings.preDutyBufferMinutes,end:end+settings.postDutyBufferMinutes});
+          else {
+            issues.set(date, 'Ground-duty time is ambiguous in this station time zone. Check the source roster.');
+            occupied.push({start:dayStart,end:dayEnd});
+          }
         }
         const intersection = intersectIntervals([stay], [{start:dayStart,end:dayEnd}]);
         for (const region of intersection) for (const free of subtractIntervals(region,occupied)) {

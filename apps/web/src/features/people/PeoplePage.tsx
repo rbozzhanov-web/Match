@@ -25,15 +25,14 @@ export function PeoplePage() {
     const start = `${today().slice(0, 7)}-01`;
     const { you: yours, them: theirs } = sampleRosters(start);
     startDemo(yours, theirs);
-    setNotice('Demo only. Your saved rosters are unchanged.');
+    setNotice(undefined);
   };
 
   return (
     <div className="page">
       {notice ? <p className="notice" role="status">{notice}</p> : null}
 
-      {demo ? <p className="notice">Demo — changes are not saved. <button className="button button--ghost" onClick={endDemo}>Exit demo</button></p> : null}
-      {canUndo ? <button className="button button--ghost" onClick={undo}>Undo last roster change</button> : null}
+      {canUndo ? <button className="button button--ghost" onClick={() => { undo(); setNotice('Last roster change undone.'); }}>Undo last roster change</button> : null}
       <fieldset disabled={demo} className="roster-fields">
       <PersonPanel
         onImport={(roster) => importRoster('you', roster)}
@@ -61,7 +60,7 @@ export function PeoplePage() {
           Load an invented month for both people to see how the app reads a pair of rosters. Nothing
           about it is real, and importing over it is the only thing it is for.
         </p>
-        <button className="button button--ghost" onClick={loadSample} disabled={demo} type="button">Load a sample month</button>
+        <button className="button button--ghost" onClick={demo ? endDemo : loadSample} type="button">{demo ? 'Exit demo' : 'Load a sample month'}</button>
       </section>
     </div>
   );
