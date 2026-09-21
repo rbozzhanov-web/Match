@@ -13,7 +13,7 @@ type ThemePreference = 'system' | 'light' | 'dark';
 const THEME_KEY = 'match.theme-preference.v1';
 
 const items = [
-  { to: '/', title: 'Together', label: 'Together', icon: '❥', end: true },
+  { to: '/', title: 'Together', label: 'Together', icon: '♥', end: true },
   { to: '/calendar', title: 'Calendar', label: 'Calendar', icon: '▦' },
   { to: '/people', title: 'Rosters', label: 'Rosters', icon: '✈' },
   { to: '/more', title: 'More', label: 'More', icon: '•••' },

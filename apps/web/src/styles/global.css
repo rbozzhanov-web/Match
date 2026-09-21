@@ -3,6 +3,18 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root { height: 100%; }
+html { background: var(--surface); }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: inherit;
+  pointer-events: none;
+}
+
+@media (display-mode: standalone) {
+  body { position: fixed; inset: 0; overflow: hidden; }
+}
 
 body {
   margin: 0;
@@ -41,6 +53,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   height: 100dvh;
   min-height: 100svh;
   overflow: hidden;
+}
+
+@media (display-mode: standalone) {
+  .app-frame { height: 100%; min-height: 0; }
 }
 
 .app-wallpaper {
@@ -312,6 +328,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .empty-state__mark { font-size: 40px; color: var(--accent); }
 .empty-state h2 { font-size: 20px; color: var(--ink); }
 .empty-state__hint { font-size: 13px; color: var(--ink-faint); }
+
+.welcome-card {
+  margin-top: 8px;
+  padding: 28px 22px;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+}
+.welcome-card__heart { width: 44px; height: 44px; color: var(--accent); }
+.welcome-card h2 { font-size: clamp(22px, 6vw, 27px); line-height: 1.2; text-wrap: balance; }
+.welcome-card > p { max-width: 32ch; }
+.welcome-card__actions { display: grid; gap: 10px; width: 100%; margin-top: 4px; }
+.welcome-card__actions .button { display: flex; align-items: center; justify-content: center; text-decoration: none; min-height: 48px; }
+.welcome-card .empty-state__hint { color: var(--ink-soft); }
 
 /* ------------------------------------------------------------- next window */
 
