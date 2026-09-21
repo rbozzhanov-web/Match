@@ -124,6 +124,7 @@ export function CalendarPage() {
                 <span className={`state-dot state-dot--${theirs?.state ?? 'unknown'}`} />
               </span>
               {hasPrivate ? <span aria-hidden="true" className="calendar-cell__mark">♥</span> : hasFamily ? <span aria-hidden="true" className="calendar-cell__mark">•</span> : null}
+              {moments.some(moment => moment.tentative) ? <span aria-hidden="true" className="calendar-cell__tentative-mark">*</span> : null}
             </button>
           );
         })}
@@ -173,6 +174,7 @@ function DayDetail({ day, moments, youName, themName }: { day: MatchDay; moments
       ) : null}
       {hasPrivate ? <p className="day-detail__context">♥ Time just for you two: {moments.filter(moment => moment.kind !== 'family').map(moment => formatInterval(moment.interval)).join(', ')}</p> : null}
       {hasFamily ? <p className="day-detail__context">• Family time: {moments.filter(moment => moment.kind === 'family').map(moment => formatInterval(moment.interval)).join(', ')}</p> : null}
+      {moments.some(moment => moment.tentative) ? <p className="day-detail__caution">* Standby — this time is free for now, but you can be called.</p> : null}
       {day.caution ? <p className="day-detail__caution">{day.caution}</p> : null}
     </article>
   );

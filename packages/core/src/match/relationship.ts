@@ -18,6 +18,8 @@ export interface RelationshipMoment {
   kind: RelationshipMomentKind;
   interval: Interval;
   minutes: number;
+  /** Standby is usable time, but it can be taken away by a call. */
+  tentative: boolean;
 }
 
 export interface RelationshipOptions {
@@ -43,18 +45,18 @@ export function relationshipMoments(days: MatchDay[], options: RelationshipOptio
     const sessions = day.sessions ?? (day.station && day.kind ? [{ station: day.station, kind: day.kind, overlap: day.overlap }] : []);
     for (const session of sessions) {
       if (session.kind === 'layover') {
-        for (const interval of session.overlap) moments.push(moment(day.date, session.station, 'layover', interval));
+        for (const interval of session.overlap) moments.push(moment(day.date, session.station, 'layover', interval, day.tentative));
         continue;
       }
 
       const privateIntervals = isChildcareDay(day.date)
         ? intersectIntervals(session.overlap, [childcare])
         : [];
-      for (const interval of privateIntervals) moments.push(moment(day.date, session.station, 'private', interval));
+      for (const interval of privateIntervals) moments.push(moment(day.date, session.station, 'private', interval, day.tentative));
 
       if (day.date >= moveInDate) {
         const familyIntervals = subtractAll(session.overlap, privateIntervals);
-        for (const interval of familyIntervals) moments.push(moment(day.date, session.station, 'family', interval));
+        for (const interval of familyIntervals) moments.push(moment(day.date, session.station, 'family', interval, day.tentative));
       }
     }
   }
@@ -66,8 +68,8 @@ export function relationshipMinutes(moments: RelationshipMoment[], kind?: Relati
   return moments.filter(moment => !kind || moment.kind === kind).reduce((sum, moment) => sum + moment.minutes, 0);
 }
 
-function moment(date: string, station: string, kind: RelationshipMomentKind, interval: Interval): RelationshipMoment {
-  return { date, station, kind, interval, minutes: totalMinutes([interval]) };
+function moment(date: string, station: string, kind: RelationshipMomentKind, interval: Interval, tentative: boolean): RelationshipMoment {
+  return { date, station, kind, interval, minutes: totalMinutes([interval]), tentative };
 }
 
 function isChildcareDay(date: string): boolean {

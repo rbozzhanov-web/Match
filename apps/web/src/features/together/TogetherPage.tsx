@@ -81,7 +81,7 @@ export function TogetherPage() {
       </section>
       {nextRealMoment ? (
         <section className={`next-window next-window--${nextRealMoment.kind}`} aria-labelledby="next-window-title">
-          <p className="next-window__countdown">{nextRealMoment.kind === 'family' ? 'NEXT FAMILY TIME' : 'NEXT TIME JUST FOR YOU TWO'}</p>
+          <p className="next-window__countdown">{nextRealMoment.kind === 'family' ? 'NEXT FAMILY TIME' : 'NEXT TIME JUST FOR YOU TWO'}{nextRealMoment.tentative ? ' *' : ''}</p>
           <h2 className="next-window__range" id="next-window-title">{formatDate(nextRealMoment.date)}</h2>
           <p className="next-window__headline">
             {nextRealMoment.kind === 'layover' ? `Together in ${nextRealMoment.station}` : nextRealMoment.kind === 'family' ? 'Together at home with the children' : 'Together while the children are out'}
@@ -92,6 +92,7 @@ export function TogetherPage() {
             <p><span>WHERE</span>{nextRealMoment.station}</p>
           </div>
           <p className="next-window__badge">{nextRealMoment.kind === 'family' ? 'Family time' : 'Just you two'} · {formatCountdown(now, nextRealMoment.date)}</p>
+          {nextRealMoment.tentative ? <p className="next-window__caution">* Standby — you can be called</p> : null}
         </section>
       ) : null}
 
@@ -133,7 +134,7 @@ export function TogetherPage() {
             </ul>
             <footer className="window-card__footer">
               {window.kind === 'layover' ? <span className="chip chip--layover">{window.station}</span> : null}
-              {window.tentative ? <span className="chip chip--tentative">standby</span> : null}
+              {window.tentative ? <span className="chip chip--tentative">* standby · can be called</span> : null}
               {window.nights ? <span className="chip">{window.nights === 1 ? '1 night' : `${window.nights} nights`}</span> : null}
             </footer>
           </article>
